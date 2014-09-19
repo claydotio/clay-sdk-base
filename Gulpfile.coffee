@@ -44,7 +44,7 @@ gulp.task 'test:phantom', ['scripts:dev', 'scripts:test'], (cb) ->
     browsers: ['PhantomJS']
   }, karmaConf), cb
 
-gulp.task 'scripts:test', ->
+gulp.task 'scripts:test', ['lint:tests'], ->
   testFiles = glob.sync(paths.tests)
   browserify
     entries: testFiles
@@ -58,6 +58,13 @@ gulp.task 'scripts:test', ->
 gulp.task 'watch', ->
   gulp.watch paths.scripts, ['scripts:dev', 'test:phantom']
   gulp.watch paths.tests, ['test:phantom']
+
+# run coffee-lint
+gulp.task 'lint:tests', ->
+  gulp.src paths.tests
+    .pipe coffeelint()
+    .pipe coffeelint.reporter()
+
 
 # run coffee-lint
 gulp.task 'lint:scripts', ->
