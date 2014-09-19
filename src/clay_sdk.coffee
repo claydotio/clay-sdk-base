@@ -48,7 +48,7 @@
       throw new Error "Invalid origin #{e.origin}"
 
     message = JSON.parse e.data
-    pendingMessages[message._id].resolve message
+    pendingMessages[message._id].resolve message.result
 
 
   # This is used to verify that the parent is clay.io

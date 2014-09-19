@@ -48,7 +48,9 @@ describe 'sdk', ->
     describe 'status', ->
       it 'returns access token', ->
 
-        routePost 'auth.getStatus', data: {accessToken: 1}
+        routePost 'auth.getStatus',
+          data:
+            result: {accessToken: 1}
 
         Clay.init({clientId: 1})
         .then (status) ->
@@ -98,7 +100,10 @@ describe 'sdk', ->
         Clay._setFramed true
 
       it 'posts to parent frame', ->
-        routePost 'kik.getUser', origin: 'http://clay.io', data: {test: true}
+        routePost 'kik.getUser',
+          origin: 'http://clay.io'
+          data:
+            result: {test: true}
 
         Clay.client method: 'kik.getUser'
         .then (user) ->
@@ -129,7 +134,8 @@ describe 'sdk', ->
         Promise.map domains, (domain) ->
           routePost 'kik.getUser',
             origin: domain
-            data: {test: true}
+            data:
+              result: {test: true}
 
           Clay.client method: 'kik.getUser'
           .then (user) ->
@@ -149,7 +155,8 @@ describe 'sdk', ->
           new Promise (resolve, reject) ->
             routePost 'kik.getUser',
               origin: domain
-              data: {test: true}
+              data:
+                result: {test: true}
 
             window.onerror = (err) ->
               resolve()
