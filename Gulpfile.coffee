@@ -112,6 +112,7 @@ gulp.task 'scripts:prod', ['lint:scripts'], ->
   browserify
     entries: paths.root
     extensions: ['.coffee']
+    standalone: 'Clay'
   .transform {global: true}, 'uglifyify'
   .bundle()
   .pipe source outFiles.scripts
