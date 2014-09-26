@@ -4,7 +4,14 @@
   else if typeof define is 'function' and define.amd
     define(definition)
   else
-    context[name] = definition()
+    if context[name]
+      Clay = definition()
+      for key, val of Clay
+        if typeof val is 'function'
+          context[name][key] = -> val.apply Clay, arguments
+        else context[name][key] = val
+    else
+      context[name] = definition()
 )('Clay', this, ->
 
   Promiz = require 'promiz'
