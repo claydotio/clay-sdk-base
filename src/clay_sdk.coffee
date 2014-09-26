@@ -17,11 +17,11 @@ postMessage = do ->
     deferred = new Promiz()
 
     try
-      message._id = messageId
-      message._clientId = clientId
-      message._accessToken = status?.accessToken
+      message.id = messageId
+      message.clientId = clientId
+      message.accessToken = status?.accessToken
 
-      pendingMessages[message._id] = deferred
+      pendingMessages[message.id] = deferred
 
       messageId += 1
 
@@ -39,7 +39,7 @@ onMessage = (e) ->
     throw new Error "Invalid origin #{e.origin}"
 
   message = JSON.parse e.data
-  pendingMessages[message._id].resolve message.result
+  pendingMessages[message.id].resolve message.result
 
 
 # This is used to verify that the parent is clay.io

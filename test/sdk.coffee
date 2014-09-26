@@ -8,7 +8,7 @@ window.parent =
   postMessage: (messageString, targetOrigin) ->
     targetOrigin.should.be '*'
     message = JSON.parse messageString
-    message._id.should.be.a.Number
+    message.id.should.be.a.Number
 
     postRoutes[message.method].should.exist
 
@@ -18,7 +18,7 @@ window.parent =
     e.origin = postRoutes[message.method].origin or
       process.env.TRUSTED_DOMAIN or 'http://clay.io'
     e.data = JSON.stringify _.defaults(
-      {_id: message._id}
+      {id: message.id}
       postRoutes[message.method].data
     )
 
