@@ -34,7 +34,7 @@ Clay = require 'clay_sdk'
 describe 'sdk', ->
   describe 'version', ->
     it 'has version', ->
-      Clay.version.should.be 'v0.0.0'
+      Clay.version.should.be 'v0.0.2'
 
   describe 'init()', ->
     describe 'signature', ->
@@ -70,6 +70,9 @@ describe 'sdk', ->
             reject new Error 'Missing error'
           , (err) ->
             reject new Error 'Non-global error'
+
+      it 'allows invalid domains in debug mode', ->
+        Clay.init({clientId: 1, debug: true})
 
   describe 'client()', ->
     describe 'state errors', ->
@@ -110,6 +113,9 @@ describe 'sdk', ->
           user.test.should.be true
 
     describe 'domain verification', ->
+      before ->
+        Clay._setDebug false
+
       it 'Succeeds on valid domains', ->
         trusted = process.env.TRUSTED_DOMAIN or 'clay.io'
 

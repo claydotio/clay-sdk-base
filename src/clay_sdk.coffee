@@ -9,6 +9,8 @@ pendingMessages = {}
 isInitialized = false
 clientId = null
 status = null
+debug = false
+
 
 postMessage = do ->
   messageId = 1
@@ -35,7 +37,7 @@ postMessage = do ->
     return deferred
 
 onMessage = (e) ->
-  unless isValidOrigin e.origin
+  if not debug and not isValidOrigin e.origin
     throw new Error "Invalid origin #{e.origin}"
 
   message = JSON.parse e.data
@@ -56,12 +58,15 @@ isValidOrigin = (origin) ->
 
 class SDK
   constructor: ->
-    @version = 'v0.0.0'
+    @version = 'v0.0.2'
     window.addEventListener 'message', onMessage
 
   # FOR TESTING ONLY
   _setInitialized: (state) ->
     isInitialized = state
+
+  _setDebug: (state) ->
+    debug = state
 
   _setFramed: (state) ->
     IS_FRAMED = state
@@ -69,6 +74,7 @@ class SDK
   # Public
   init: (opts) ->
     clientId = opts?.clientId
+    debug = Boolean opts?.debug
 
     unless clientId
       return new Promiz().reject new Error 'Missing clientId'
