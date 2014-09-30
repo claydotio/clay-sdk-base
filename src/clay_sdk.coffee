@@ -41,6 +41,10 @@ onMessage = (e) ->
     throw new Error "Invalid origin #{e.origin}"
 
   message = JSON.parse e.data
+
+  unless message.id
+    return
+
   pendingMessages[message.id].resolve message.result
 
 
