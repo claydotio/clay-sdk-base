@@ -38,12 +38,12 @@ describe 'sdk', ->
 
   describe 'init()', ->
     describe 'signature', ->
-      it 'requires clientId', ->
+      it 'requires gameId', ->
         Clay.init()
         .then ->
           throw new Error 'Expected error'
         , (err) ->
-          err.message.should.be 'Missing clientId'
+          err.message.should.be 'Missing gameId'
 
     describe 'status', ->
       it 'returns access token', ->
@@ -52,7 +52,7 @@ describe 'sdk', ->
           data:
             result: {accessToken: 1}
 
-        Clay.init({clientId: 1})
+        Clay.init({gameId: 1})
         .then (status) ->
           status.accessToken.should.be.a.Number
 
@@ -65,14 +65,14 @@ describe 'sdk', ->
           window.onerror = (err) ->
             resolve()
 
-          Clay.init({clientId: 1})
+          Clay.init({gameId: 1})
           .then (res) ->
             reject new Error 'Missing error'
           , (err) ->
             reject new Error 'Non-global error'
 
       it 'allows invalid domains in debug mode', ->
-        Clay.init({clientId: 1, debug: true})
+        Clay.init({gameId: 1, debug: true})
 
   describe 'client()', ->
     describe 'state errors', ->

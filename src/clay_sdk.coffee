@@ -7,7 +7,7 @@ IS_FRAMED = window.self isnt window.top
 
 pendingMessages = {}
 isInitialized = false
-clientId = null
+gameId = null
 status = null
 debug = false
 
@@ -20,7 +20,7 @@ postMessage = do ->
 
     try
       message.id = messageId
-      message.clientId = clientId
+      message.gameId = gameId
       message.accessToken = status?.accessToken
 
       pendingMessages[message.id] = deferred
@@ -77,11 +77,11 @@ class SDK
 
   # Public
   init: (opts) ->
-    clientId = opts?.clientId
+    gameId = opts?.gameId
     debug = Boolean opts?.debug
 
-    unless clientId
-      return new Promiz().reject new Error 'Missing clientId'
+    unless gameId
+      return new Promiz().reject new Error 'Missing gameId'
 
     if IS_FRAMED
       return validateParent()
