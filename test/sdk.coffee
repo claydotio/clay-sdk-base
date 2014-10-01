@@ -9,6 +9,8 @@ window.parent =
     targetOrigin.should.be '*'
     message = JSON.parse messageString
     message.id.should.be.a.Number
+    message._clay.should.be true
+    message.jsonrpc.should.be '2.0'
 
     postRoutes[message.method].should.exist
 

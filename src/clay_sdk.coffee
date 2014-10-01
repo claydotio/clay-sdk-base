@@ -22,6 +22,8 @@ postMessage = do ->
       message.id = messageId
       message.gameId = gameId
       message.accessToken = status?.accessToken
+      message._clay = true
+      message.jsonrpc = '2.0'
 
       pendingMessages[message.id] = deferred
 
@@ -92,6 +94,7 @@ class SDK
         isInitialized = true
         # TODO: Token may be invalid
         status = _status
+
     else
       return new Promiz().reject new Error 'Unframed Not Implemented'
 
