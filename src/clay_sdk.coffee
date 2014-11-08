@@ -77,10 +77,15 @@ class SDK
   _setFramed: (state) ->
     IS_FRAMED = state
 
+  # used by clay_ui, could probably be better
+  _config: {}
+
   # Public
   init: (opts) ->
     gameId = opts?.gameId
     debug = Boolean opts?.debug
+
+    @_config.gameId = gameId
 
     unless gameId
       return new Promiz().reject new Error 'Missing gameId'

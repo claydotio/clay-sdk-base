@@ -58,6 +58,16 @@ describe 'sdk', ->
         .then (status) ->
           status.accessToken.should.be.a.Number
 
+    describe 'config', ->
+      it 'sets gameId', ->
+        routePost 'auth.getStatus',
+          data:
+            result: {accessToken: 1}
+
+        Clay.init({gameId: 1})
+        .then ->
+          Clay._config.gameId.should.be 1
+
     describe 'domain verification when framed', ->
       it 'dissallows invalid domains', ->
 
