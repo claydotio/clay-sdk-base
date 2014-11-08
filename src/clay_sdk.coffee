@@ -101,7 +101,8 @@ class SDK
         status = _status
 
     else
-      return new Promiz().reject new Error 'Unframed Not Implemented'
+      isInitialized = true
+      status = {}
 
   login: ({scope}) ->
     # TODO: OAuth magic. Gets token

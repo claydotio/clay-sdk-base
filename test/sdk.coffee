@@ -97,18 +97,6 @@ describe 'sdk', ->
         , (err) ->
           err.message.should.be 'Must call Clay.init() first'
 
-      it 'errors if not framed', ->
-        Clay._setInitialized true
-        Clay._setFramed false
-
-        Clay.client method: 'kik.send'
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
-          err.message.should.be 'Missing parent frame. Make sure
-                                 you are within a clay game running
-                                 frame'
-
     describe 'Posting', ->
       before ->
         Clay._setInitialized true
