@@ -2,6 +2,8 @@ should = require('clay-chai').should()
 Promise = require 'bluebird'
 _ = require 'lodash'
 
+packageConfig = require '../package.json'
+
 postRoutes = {}
 
 window.parent =
@@ -36,7 +38,7 @@ Clay = require 'clay_sdk'
 describe 'sdk', ->
   describe 'version', ->
     it 'has version', ->
-      Clay.version.should.be 'v0.0.2'
+      Clay.version.should.be 'v' + packageConfig.version
 
   describe 'init()', ->
     describe 'signature', ->

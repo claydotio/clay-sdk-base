@@ -64,7 +64,7 @@ isValidOrigin = (origin) ->
 
 class SDK
   constructor: ->
-    @version = 'v0.0.2'
+    @version = 'v0.0.5'
     window.addEventListener 'message', onMessage
 
   # FOR TESTING ONLY
@@ -103,6 +103,7 @@ class SDK
     else
       isInitialized = true
       status = {}
+      return new Promiz().resolve(null)
 
   login: ({scope}) ->
     # TODO: OAuth magic. Gets token
