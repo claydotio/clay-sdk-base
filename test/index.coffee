@@ -3,6 +3,7 @@ Promise = require 'bluebird'
 _ = require 'lodash'
 
 packageConfig = require '../package.json'
+Clay = require 'index'
 
 postRoutes = {}
 
@@ -32,8 +33,6 @@ routePost = (method, {origin, data}) ->
   postRoutes[method] = {origin, data}
 
 routePost 'ping', {}
-
-Clay = require 'clay_sdk'
 
 describe 'sdk', ->
   describe 'version', ->

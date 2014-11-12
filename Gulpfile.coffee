@@ -1,63 +1,78 @@
 _ = require 'lodash'
 gulp = require 'gulp'
-gutil = require 'gulp-util'
-browserify = require 'browserify'
+nodemon = require 'gulp-nodemon'
+rename = require 'gulp-rename'
 clean = require 'gulp-clean'
-sourcemaps = require 'gulp-sourcemaps'
-source = require 'vinyl-source-stream'
 runSequence = require 'gulp-run-sequence'
 coffeelint = require 'gulp-coffeelint'
-glob = require 'glob'
-rename = require 'gulp-rename'
 karma = require('karma').server
+RewirePlugin = require 'rewire-webpack'
+webpack = require 'gulp-webpack'
+webpackSource = require 'webpack'
 
 karmaConf = require './karma.defaults'
 
-# Modify NODE_PATH for test require's
-process.env.NODE_PATH += ':' + __dirname + '/src'
-
 outFiles =
   scripts: 'bundle.js'
-  styles: 'bundle.css'
 
 paths =
-  scripts: './src/**/*.coffee'
+  scripts: ['./src/**/*.coffee', './*.coffee']
   tests: './test/**/*.coffee'
-  root: './src/clay_sdk.coffee'
-  #mock: './src/coffee/mock.coffee'
+  root: './src/index.coffee'
+  rootTests: './test/index.coffee'
   dist: './dist/'
   build: './build/'
 
-#isMockingApi = process.env.MOCK
+gulp.task 'demo', ->
+  gulp.start 'server'
+
+# compile sources: src/* -> dist/*
+gulp.task 'assets:prod', [
+  'scripts:prod'
+]
 
 # build for production
 gulp.task 'build', (cb) ->
-  runSequence 'clean:dist', 'scripts:prod', cb
+  runSequence 'clean:dist', 'assets:prod', cb
 
 # tests
-gulp.task 'test', ['scripts:dev', 'scripts:test'], (cb) ->
+gulp.task 'test', [
+    'scripts:test'
+    'lint:tests'
+    'lint:scripts'
+  ], (cb) ->
   karma.start _.defaults(singleRun: true, karmaConf), cb
 
-gulp.task 'test:phantom', ['scripts:dev', 'scripts:test'], (cb) ->
+gulp.task 'test:phantom', ['scripts:test'], (cb) ->
   karma.start _.defaults({
     singleRun: true,
     browsers: ['PhantomJS']
   }, karmaConf), cb
 
-gulp.task 'scripts:test', ['lint:tests'], ->
-  testFiles = glob.sync(paths.tests)
-  browserify
-    entries: testFiles
-    extensions: ['.coffee']
-    debug: true
-  .bundle()
-  .on 'error', errorHandler
-  .pipe source outFiles.scripts
-  .pipe gulp.dest paths.build + '/test/'
+gulp.task 'scripts:test', ->
 
-gulp.task 'watch', ->
-  gulp.watch paths.scripts, ['scripts:dev', 'test:phantom']
-  gulp.watch paths.tests, ['test:phantom']
+  gulp.src paths.rootTests
+  .pipe webpack
+    devtool: '#inline-source-map'
+    module:
+      postLoaders: [
+        { test: /\.coffee$/, loader: 'transform/cacheable?envify' }
+      ]
+      loaders: [
+        { test: /\.coffee$/, loader: 'coffee' }
+        { test: /\.json$/, loader: 'json' }
+      ]
+    plugins: [
+      new RewirePlugin()
+    ]
+    resolve:
+      extensions: ['.coffee', '.js', '.json', '']
+      # browser-builtins is for modules requesting native node modules
+      modulesDirectories: ['web_modules', 'node_modules', './src',
+      './node_modules/browser-builtins/builtin']
+  .pipe rename 'tests.js'
+  .pipe gulp.dest paths.build
+
 
 # run coffee-lint
 gulp.task 'lint:tests', ->
@@ -65,38 +80,23 @@ gulp.task 'lint:tests', ->
     .pipe coffeelint()
     .pipe coffeelint.reporter()
 
+#
+# Dev server and watcher
+#
+
+# start the dev server
+gulp.task 'server', ->
+  # Don't actually watch for changes, just run the server
+  nodemon {script: 'bin/dev_server.coffee', ext: 'null', ignore: ['**/*.*']}
+
+gulp.task 'watch:test', ->
+  gulp.watch paths.scripts.concat([paths.tests]), ['test:phantom']
 
 # run coffee-lint
 gulp.task 'lint:scripts', ->
   gulp.src paths.scripts
     .pipe coffeelint()
     .pipe coffeelint.reporter()
-
-#
-# Dev compilation
-#
-
-errorHandler = ->
-  gutil.log.apply null, arguments
-  @emit 'end'
-
-# init.coffee --> build/js/bundle.js
-gulp.task 'scripts:dev', ['lint:scripts'], ->
-  entries = [paths.root]
-
-  # Order matters because mock overrides window.XMLHttpRequest
-  # if isMockingApi
-  #   entries = [paths.mock].concat entries
-
-  browserify
-    entries: entries
-    extensions: ['.coffee']
-    debug: true
-  .bundle()
-  .on 'error', errorHandler
-  .pipe source outFiles.scripts
-  .pipe rename 'clay_sdk.js'
-  .pipe gulp.dest paths.build
 
 #
 # Production compilation
@@ -108,13 +108,23 @@ gulp.task 'clean:dist', ->
     .pipe clean()
 
 # init.coffee --> dist/js/bundle.min.js
-gulp.task 'scripts:prod', ['lint:scripts'], ->
-  browserify
-    entries: paths.root
-    extensions: ['.coffee']
-    standalone: 'Clay'
-  .transform {global: true}, 'uglifyify'
-  .bundle()
-  .pipe source outFiles.scripts
+gulp.task 'scripts:prod', ->
+  gulp.src paths.root
+  .pipe webpack
+    output:
+      library: 'Clay'
+    module:
+      postLoaders: [
+        { test: /\.coffee$/, loader: 'transform/cacheable?envify' }
+      ]
+      loaders: [
+        { test: /\.coffee$/, loader: 'coffee' }
+        { test: /\.json$/, loader: 'json' }
+      ]
+    plugins: [
+      new webpackSource.optimize.UglifyJsPlugin()
+    ]
+    resolve:
+      extensions: ['.coffee', '.js', '.json', '']
   .pipe rename 'clay_sdk.js'
   .pipe gulp.dest paths.dist
