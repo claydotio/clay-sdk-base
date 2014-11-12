@@ -114,9 +114,69 @@ describe 'sdk', ->
         .then (user) ->
           user.test.should.be true
 
+      it 'recieved errors', ->
+        routePost 'kik.getUser',
+          origin: 'http://clay.io'
+          data:
+            error: {message: 'abc'}
+
+        Clay.client method: 'kik.getUser'
+        .then ->
+          throw new Error 'Error expected'
+        , (err) ->
+          err.message.should.be 'abc'
+
+    describe 'share.any', ->
+      describe 'framed', ->
+        before ->
+          Clay._setInitialized true
+          Clay._setFramed true
+
+        it 'posts to parent', ->
+          routePost 'share.any',
+            origin: 'http://clay.io'
+            data:
+              result: {test: true}
+
+          Clay.client method: 'share.any', params: {text: 'Hello World'}
+          .then (res) ->
+            res.test.should.be true
+
+        it 'falls back to local if parent fails', ->
+          routePost 'share.any',
+            origin: 'http://clay.io'
+            data:
+              error: {message: 'something went wrong'}
+
+          openCnt = 0
+          window.open = (url) ->
+            openCnt += 1
+            url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
+
+          Clay.client method: 'share.any', params: [{text: 'Hello World'}]
+          .then (res) ->
+            openCnt.should.be 1
+
+      describe 'local', ->
+        before ->
+          Clay._setInitialized true
+          Clay._setFramed false
+
+        it 'tweets', ->
+          openCnt = 0
+          window.open = (url) ->
+            openCnt += 1
+            url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
+
+          Clay.client method: 'share.any', params: [{text: 'Hello World'}]
+          .then (res) ->
+            openCnt.should.be 1
+
     describe 'domain verification', ->
       before ->
         Clay._setDebug false
+        Clay._setInitialized true
+        Clay._setFramed true
 
       it 'Succeeds on valid domains', ->
         trusted = process.env.TRUSTED_DOMAIN or 'clay.io'
@@ -159,7 +219,7 @@ describe 'sdk', ->
           "http://evil.io/http://#{trusted}/"
         ]
 
-        Promise.map ['http://evilclay.io'], (domain) ->
+        Promise.each domains, (domain) ->
           new Promise (resolve, reject) ->
             routePost 'kik.getUser',
               origin: domain

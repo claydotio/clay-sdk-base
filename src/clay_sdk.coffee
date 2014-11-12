@@ -47,7 +47,10 @@ onMessage = (e) ->
   unless message.id
     return
 
-  pendingMessages[message.id].resolve message.result
+  if message.error
+    pendingMessages[message.id].reject new Error message.error.message
+  else
+    pendingMessages[message.id].resolve message.result
 
 
 # This is used to verify that the parent is clay.io
@@ -60,7 +63,17 @@ isValidOrigin = (origin) ->
   regex = new RegExp "^https?://(\\w+\\.)?(\\w+\\.)?#{TRUSTED_DOMAIN}/?$"
   return regex.test origin
 
+methodToFn = (method) ->
+  switch method
+    when 'share.any' then shareAny
+    else -> throw new Error 'Method not found'
 
+shareAny = ({text}) ->
+  tweet = (text) ->
+    text = encodeURIComponent text.substr 0, 140
+    window.open "https://twitter.com/intent/tweet?text=#{text}"
+
+  return tweet(text)
 
 class SDK
   constructor: ->
@@ -117,15 +130,26 @@ class SDK
     unless isInitialized
       return new Promiz().reject new Error 'Must call Clay.init() first'
 
-    unless IS_FRAMED
-      return new Promiz().reject new Error 'Missing parent frame. Make sure
-                                            you are within a clay game running
-                                            frame'
+    localMethod = (message) ->
+      method = message.method
+      params = message.params
+      return methodToFn(method).apply null, params
 
-    validateParent()
-    .then ->
-      postMessage message
-
+    if IS_FRAMED
+      frameError = null
+      return validateParent()
+      .then ->
+        postMessage message
+      .then null, (err) ->
+        frameError = err
+        localMethod(message)
+      .then null, (err) ->
+        if err.message is 'Method not found' and frameError isnt null
+          throw frameError
+        else
+          throw err
+    else
+      return new Promiz().resolve localMethod(message)
 
 
 
