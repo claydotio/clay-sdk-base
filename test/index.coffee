@@ -1,9 +1,30 @@
+# Function::bind polyfill for rewirejs + phantomjs
+unless Function::bind
+  Function::bind = (oThis) ->
+
+    # closest thing possible to the ECMAScript 5
+    # internal IsCallable function
+    throw new TypeError('Function.prototype.bind - what is trying to be bound
+     is not callable')  if typeof this isnt 'function'
+    aArgs = Array::slice.call(arguments, 1)
+    fToBind = this
+    fNOP = -> null
+
+    fBound = ->
+      fToBind.apply (if this instanceof fNOP and oThis then this else oThis),
+      aArgs.concat(Array::slice.call(arguments))
+
+    fNOP.prototype = this.prototype
+    fBound:: = new fNOP()
+    fBound
+
 should = require('clay-chai').should()
 Promise = require 'bluebird'
 _ = require 'lodash'
+rewire = require 'rewire'
 
 packageConfig = require '../package.json'
-Clay = require 'index'
+Clay = rewire 'index'
 
 postRoutes = {}
 
@@ -90,7 +111,7 @@ describe 'sdk', ->
   describe 'client()', ->
     describe 'state errors', ->
       it 'errors if init hasn\'t been called', ->
-        Clay._setInitialized false
+        Clay.__set__ 'isInitialized', false
 
         Clay.client method: 'kik.send'
         .then (res) ->
@@ -100,8 +121,8 @@ describe 'sdk', ->
 
     describe 'Posting', ->
       before ->
-        Clay._setInitialized true
-        Clay._setFramed true
+        Clay.__set__ 'isInitialized', true
+        Clay.__set__ 'IS_FRAMED', true
 
       it 'posts to parent frame', ->
         routePost 'kik.getUser',
@@ -128,8 +149,8 @@ describe 'sdk', ->
     describe 'share.any', ->
       describe 'framed', ->
         before ->
-          Clay._setInitialized true
-          Clay._setFramed true
+          Clay.__set__ 'isInitialized', true
+          Clay.__set__ 'IS_FRAMED', true
 
         it 'posts to parent', ->
           routePost 'share.any',
@@ -158,8 +179,8 @@ describe 'sdk', ->
 
       describe 'local', ->
         before ->
-          Clay._setInitialized true
-          Clay._setFramed false
+          Clay.__set__ 'isInitialized', true
+          Clay.__set__ 'IS_FRAMED', false
 
         it 'tweets', ->
           openCnt = 0
@@ -173,9 +194,9 @@ describe 'sdk', ->
 
     describe 'domain verification', ->
       before ->
-        Clay._setDebug false
-        Clay._setInitialized true
-        Clay._setFramed true
+        Clay.__set__ 'debug', false
+        Clay.__set__ 'isInitialized', true
+        Clay.__set__ 'IS_FRAMED', true
 
       it 'Succeeds on valid domains', ->
         trusted = process.env.TRUSTED_DOMAIN or 'clay.io'

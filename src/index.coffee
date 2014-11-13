@@ -80,16 +80,6 @@ class SDK
     @version = 'v0.0.5'
     window.addEventListener 'message', onMessage
 
-  # FOR TESTING ONLY
-  _setInitialized: (state) ->
-    isInitialized = state
-
-  _setDebug: (state) ->
-    debug = state
-
-  _setFramed: (state) ->
-    IS_FRAMED = state
-
   # used by clay_ui, could probably be better
   _config: {}
 
