@@ -7,7 +7,7 @@ WebpackDevServer = require 'webpack-dev-server'
 app = express()
 
 webpackDevPort = process.env.PORT or 3004
-webpackDevHostname = process.env.WEBPACK_DEV_HOSTNAME
+webpackDevHostname = process.env.WEBPACK_DEV_HOSTNAME or 'localhost'
 
 entries = [
   "webpack-dev-server/client?http://#{webpackDevHostname}:#{webpackDevPort}"
