@@ -15,8 +15,9 @@ debug = false
 postMessage = do ->
   messageId = 1
 
-  (message) ->
+  ({method, params}) ->
     deferred = new Promiz()
+    message = {method, params}
 
     try
       message.id = messageId
@@ -84,14 +85,13 @@ class SDK
   _config: {}
 
   # Public
-  init: (opts) ->
-    gameId = opts?.gameId
-    debug = Boolean opts?.debug
+  init: ({gameId, debug} = {}) ->
+    debug = Boolean debug
 
     @_config.gameId = gameId
 
-    unless gameId
-      return new Promiz().reject new Error 'Missing gameId'
+    unless typeof gameId is 'string' and /^[0-9]+$/.test gameId
+      return new Promiz().reject new Error 'Missing or invalid gameId'
 
     if IS_FRAMED
       return validateParent()
@@ -116,30 +116,34 @@ class SDK
     # TODO: implement
     return new Promiz().reject new Error 'Not Implemented'
 
-  client: (message) ->
+  client: ({method, params} = {}) ->
     unless isInitialized
       return new Promiz().reject new Error 'Must call Clay.init() first'
 
-    localMethod = (message) ->
-      method = message.method
-      params = message.params
+    unless typeof method is 'string'
+      return new Promiz().reject new Error 'Missing or invalid method'
+
+    if params? and Object::toString.call(params) isnt '[object Array]'
+      return new Promiz().reject new Error 'Params must be an array'
+
+    localMethod = ({method, params}) ->
       return methodToFn(method).apply null, params
 
     if IS_FRAMED
       frameError = null
       return validateParent()
       .then ->
-        postMessage message
+        postMessage {method, params}
       .then null, (err) ->
         frameError = err
-        localMethod(message)
+        localMethod({method, params})
       .then null, (err) ->
         if err.message is 'Method not found' and frameError isnt null
           throw frameError
         else
           throw err
     else
-      return new Promiz().resolve localMethod(message)
+      return new Promiz().resolve localMethod({method, params})
 
 
 

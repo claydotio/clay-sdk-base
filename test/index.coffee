@@ -62,12 +62,19 @@ describe 'sdk', ->
 
   describe 'init()', ->
     describe 'signature', ->
-      it 'requires gameId', ->
+      it 'gameId type checks undefined', ->
         Clay.init()
         .then ->
           throw new Error 'Expected error'
         , (err) ->
-          err.message.should.be 'Missing gameId'
+          err.message.should.be 'Missing or invalid gameId'
+
+      it 'gameId type checks number', ->
+        Clay.init(gameId: 1)
+        .then ->
+          throw new Error 'Expected error'
+        , (err) ->
+          err.message.should.be 'Missing or invalid gameId'
 
     describe 'status', ->
       it 'returns access token', ->
@@ -76,7 +83,7 @@ describe 'sdk', ->
           data:
             result: {accessToken: 1}
 
-        Clay.init({gameId: 1})
+        Clay.init({gameId: '1'})
         .then (status) ->
           status.accessToken.should.be.a.Number
 
@@ -86,9 +93,9 @@ describe 'sdk', ->
           data:
             result: {accessToken: 1}
 
-        Clay.init({gameId: 1})
+        Clay.init({gameId: '1'})
         .then ->
-          Clay._config.gameId.should.be 1
+          Clay._config.gameId.should.be '1'
 
     describe 'domain verification when framed', ->
       it 'dissallows invalid domains', ->
@@ -99,16 +106,18 @@ describe 'sdk', ->
           window.onerror = (err) ->
             resolve()
 
-          Clay.init({gameId: 1})
+          Clay.init({gameId: '1'})
           .then (res) ->
             reject new Error 'Missing error'
           , (err) ->
             reject new Error 'Non-global error'
 
       it 'allows invalid domains in debug mode', ->
-        Clay.init({gameId: 1, debug: true})
+        routePost 'auth.getStatus', origin: 'http://clay.io'
+        Clay.init({gameId: '1', debug: true})
 
   describe 'client()', ->
+
     describe 'state errors', ->
       it 'errors if init hasn\'t been called', ->
         Clay.__set__ 'isInitialized', false
@@ -118,6 +127,52 @@ describe 'sdk', ->
           throw new Error 'Missing error'
         , (err) ->
           err.message.should.be 'Must call Clay.init() first'
+
+    describe 'signature', ->
+      before ->
+        Clay.__set__ 'isInitialized', true
+
+      it 'errors if method missing', ->
+        Clay.client()
+        .then (res) ->
+          throw new Error 'Missing error'
+        , (err) ->
+          err.message.should.be 'Missing or invalid method'
+
+      it 'errors if method is an object', ->
+        Clay.client(method: {})
+        .then (res) ->
+          throw new Error 'Missing error'
+        , (err) ->
+          err.message.should.be 'Missing or invalid method'
+
+      it 'errors is method is a number', ->
+        Clay.client(method: 123)
+        .then (res) ->
+          throw new Error 'Missing error'
+        , (err) ->
+          err.message.should.be 'Missing or invalid method'
+
+      it 'errors if params is an object', ->
+        Clay.client(method: 'kik.send', params: {})
+        .then (res) ->
+          throw new Error 'Missing error'
+        , (err) ->
+          err.message.should.be 'Params must be an array'
+
+      it 'errors if params is a string', ->
+        Clay.client(method: 'kik.send', params: 'param')
+        .then (res) ->
+          throw new Error 'Missing error'
+        , (err) ->
+          err.message.should.be 'Params must be an array'
+
+      it 'errors if params is a number', ->
+        Clay.client(method: 'kik.send', params: 123)
+        .then (res) ->
+          throw new Error 'Missing error'
+        , (err) ->
+          err.message.should.be 'Params must be an array'
 
     describe 'Posting', ->
       before ->
@@ -158,7 +213,7 @@ describe 'sdk', ->
             data:
               result: {test: true}
 
-          Clay.client method: 'share.any', params: {text: 'Hello World'}
+          Clay.client method: 'share.any', params: [{text: 'Hello World'}]
           .then (res) ->
             res.test.should.be true
 
