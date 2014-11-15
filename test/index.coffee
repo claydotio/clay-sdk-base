@@ -20,11 +20,13 @@ unless Function::bind
 
 should = require('clay-chai').should()
 Promise = require 'bluebird'
+Promiz = require 'promiz'
 _ = require 'lodash'
 rewire = require 'rewire'
 
 packageConfig = require '../package.json'
-Clay = rewire 'index'
+ClayRoot = rewire 'index'
+Clay = ClayRoot.__get__ 'sdk'
 
 postRoutes = {}
 
@@ -35,6 +37,7 @@ window.parent =
     message.id.should.be.a.Number
     message._clay.should.be true
     message.jsonrpc.should.be '2.0'
+    message.gameId.should.be.a.String
 
     postRoutes[message.method].should.exist
 
@@ -56,26 +59,13 @@ routePost = (method, {origin, data}) ->
 routePost 'ping', {}
 
 describe 'sdk', ->
+  @timeout 200
+
   describe 'version', ->
     it 'has version', ->
       Clay.version.should.be 'v' + packageConfig.version
 
   describe 'init()', ->
-    describe 'signature', ->
-      it 'gameId type checks undefined', ->
-        Clay.init()
-        .then ->
-          throw new Error 'Expected error'
-        , (err) ->
-          err.message.should.be 'Missing or invalid gameId'
-
-      it 'gameId type checks number', ->
-        Clay.init(gameId: 1)
-        .then ->
-          throw new Error 'Expected error'
-        , (err) ->
-          err.message.should.be 'Missing or invalid gameId'
-
     describe 'status', ->
       it 'returns access token', ->
 
@@ -93,9 +83,24 @@ describe 'sdk', ->
           data:
             result: {accessToken: 1}
 
-        Clay.init({gameId: '1'})
+        Clay.init({gameId: '2'})
         .then ->
-          Clay._config.gameId.should.be '1'
+          Clay.config.gameId.should.be '2'
+
+    describe 'signature', ->
+      it 'gameId type checks undefined', ->
+        Clay.init()
+        .then ->
+          throw new Error 'Expected error'
+        , (err) ->
+          err.message.should.be 'Missing or invalid gameId'
+
+      it 'gameId type checks number', ->
+        Clay.init(gameId: 1)
+        .then ->
+          throw new Error 'Expected error'
+        , (err) ->
+          err.message.should.be 'Missing or invalid gameId'
 
     describe 'domain verification when framed', ->
       it 'dissallows invalid domains', ->
@@ -120,7 +125,7 @@ describe 'sdk', ->
 
     describe 'state errors', ->
       it 'errors if init hasn\'t been called', ->
-        Clay.__set__ 'isInitialized', false
+        Clay.initHasBeenCalled = false
 
         Clay.client method: 'kik.send'
         .then (res) ->
@@ -130,7 +135,7 @@ describe 'sdk', ->
 
     describe 'signature', ->
       before ->
-        Clay.__set__ 'isInitialized', true
+        Clay.initHasBeenCalled = true
 
       it 'errors if method missing', ->
         Clay.client()
@@ -176,8 +181,8 @@ describe 'sdk', ->
 
     describe 'Posting', ->
       before ->
-        Clay.__set__ 'isInitialized', true
-        Clay.__set__ 'IS_FRAMED', true
+        Clay.initHasBeenCalled = true
+        ClayRoot.__set__ 'IS_FRAMED', true
 
       it 'posts to parent frame', ->
         routePost 'kik.getUser',
@@ -204,8 +209,8 @@ describe 'sdk', ->
     describe 'share.any', ->
       describe 'framed', ->
         before ->
-          Clay.__set__ 'isInitialized', true
-          Clay.__set__ 'IS_FRAMED', true
+          Clay.initHasBeenCalled = true
+          ClayRoot.__set__ 'IS_FRAMED', true
 
         it 'posts to parent', ->
           routePost 'share.any',
@@ -234,8 +239,8 @@ describe 'sdk', ->
 
       describe 'local', ->
         before ->
-          Clay.__set__ 'isInitialized', true
-          Clay.__set__ 'IS_FRAMED', false
+          Clay.initHasBeenCalled = true
+          ClayRoot.__set__ 'IS_FRAMED', false
 
         it 'tweets', ->
           openCnt = 0
@@ -249,9 +254,9 @@ describe 'sdk', ->
 
     describe 'domain verification', ->
       before ->
-        Clay.__set__ 'debug', false
-        Clay.__set__ 'isInitialized', true
-        Clay.__set__ 'IS_FRAMED', true
+        Clay.config.debug = false
+        Clay.initHasBeenCalled = true
+        ClayRoot.__set__ 'IS_FRAMED', true
 
       it 'Succeeds on valid domains', ->
         trusted = process.env.TRUSTED_DOMAIN or 'clay.io'
