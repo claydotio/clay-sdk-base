@@ -10,8 +10,8 @@ class SDK
     @config = new Promiz()
 
     # Private
-    @pendingMessages = {}
     @initHasBeenCalled = false
+    @pendingMessages = {}
     @nextMessageId = 1
 
     window.addEventListener 'message', @onMessage
