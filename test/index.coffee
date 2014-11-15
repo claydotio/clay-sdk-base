@@ -28,6 +28,8 @@ packageConfig = require '../package.json'
 ClayRoot = rewire 'index'
 Clay = ClayRoot.__get__ 'sdk'
 
+TRUSTED_DOMAIN = process.env.TRUSTED_DOMAIN or 'clay.io'
+
 postRoutes = {}
 
 window.parent =
@@ -44,8 +46,7 @@ window.parent =
     e = document.createEvent 'Event'
     e.initEvent 'message', true, true
 
-    e.origin = postRoutes[message.method].origin or
-      process.env.TRUSTED_DOMAIN or 'http://clay.io'
+    e.origin = postRoutes[message.method].origin or ('http://' + TRUSTED_DOMAIN)
     e.data = JSON.stringify _.defaults(
       {id: message.id}
       postRoutes[message.method].data
@@ -59,7 +60,7 @@ routePost = (method, {origin, data}) ->
 routePost 'ping', {}
 
 describe 'sdk', ->
-  @timeout 2000
+  @timeout 1000
 
   describe 'version', ->
     it 'has version', ->
@@ -263,24 +264,22 @@ describe 'sdk', ->
           ClayRoot.__set__ 'IS_FRAMED', true
 
       it 'Succeeds on valid domains', ->
-        trusted = process.env.TRUSTED_DOMAIN or 'clay.io'
-
         domains = [
-          "http://#{trusted}/"
-          "https://#{trusted}/"
-          "http://#{trusted}"
-          "https://#{trusted}"
+          "http://#{TRUSTED_DOMAIN}/"
+          "https://#{TRUSTED_DOMAIN}/"
+          "http://#{TRUSTED_DOMAIN}"
+          "https://#{TRUSTED_DOMAIN}"
 
           # Sub domains
-          "http://sub.#{trusted}/"
-          "https://sub.#{trusted}/"
-          "http://sub.#{trusted}"
-          "https://sub.#{trusted}"
+          "http://sub.#{TRUSTED_DOMAIN}/"
+          "https://sub.#{TRUSTED_DOMAIN}/"
+          "http://sub.#{TRUSTED_DOMAIN}"
+          "https://sub.#{TRUSTED_DOMAIN}"
 
-          "http://sub.sub.#{trusted}/"
-          "https://sub.sub.#{trusted}/"
-          "http://sub.sub.#{trusted}"
-          "https://sub.sub.#{trusted}"
+          "http://sub.sub.#{TRUSTED_DOMAIN}/"
+          "https://sub.sub.#{TRUSTED_DOMAIN}/"
+          "http://sub.sub.#{TRUSTED_DOMAIN}"
+          "https://sub.sub.#{TRUSTED_DOMAIN}"
         ]
 
         Promise.map domains, (domain) ->
@@ -294,13 +293,11 @@ describe 'sdk', ->
             user.test.should.be true
 
       it 'Errors on invalid domains', ->
-        trusted = process.env.TRUSTED_DOMAIN or 'clay.io'
-
         domains = [
           'http://evil.io/'
           'http://sub.evil.io/'
           'http://sub.sub.evil.io/'
-          "http://evil.io/http://#{trusted}/"
+          "http://evil.io/http://#{TRUSTED_DOMAIN}/"
         ]
 
         Promise.each domains, (domain) ->
