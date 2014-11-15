@@ -2,7 +2,7 @@
   "name": "clay-javascript-sdk",
   "version": "0.0.6",
   "description": "",
-  "main": "src/clay_sdk.coffee",
+  "main": "src/index.coffee",
   "directories": {
     "test": "test"
   },
