@@ -6,7 +6,7 @@ IS_FRAMED = window.self isnt window.top
 class SDK
   constructor: ->
     # Public
-    @version = 'v0.0.6'
+    @version = 'v0.0.7'
     @config = new Promiz()
 
     # Private
