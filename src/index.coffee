@@ -7,14 +7,12 @@ class SDK
   constructor: ->
     # Public
     @version = 'v0.0.5'
-    @config = {debug: false, gameId: null}
+    @config = new Promiz()
 
     # Private
     @pendingMessages = {}
-    @status =
-      access_token: null
-    @initPromise = new Promiz()
     @initHasBeenCalled = false
+    @nextMessageId = 1
 
     window.addEventListener 'message', @onMessage
 
@@ -25,23 +23,28 @@ class SDK
 
     @initHasBeenCalled = true
 
-    @config =
-      debug: Boolean debug
-      gameId: gameId or null
-
     if IS_FRAMED
-      return @validateParent()
+      @validateParent()
       .then =>
         @postMessage
+          config:
+            gameId: gameId
           method: 'auth.getStatus'
-      .then (_status) =>
+      .then (status) =>
         # TODO: Token may be invalid
-        @status = _status
+        @config.resolve
+          debug: Boolean debug
+          gameId: gameId
+          accessToken: status?.accessToken
 
-        return @initPromise.resolve @status
-
+        return @config
     else
-      return @initPromise.resolve(@status)
+      @config.resolve
+        debug: Boolean debug
+        gameId: gameId
+        accessToken: null
+
+      return @config
 
   login: ({scope}) ->
     # TODO: OAuth magic. Gets token
@@ -64,12 +67,12 @@ class SDK
     localMethod = ({method, params}) =>
       return @methodToFn(method).apply null, params
 
-    return @initPromise.then =>
+    return @config.then (config) =>
       if IS_FRAMED
         frameError = null
         return @validateParent()
         .then =>
-          @postMessage {method, params}
+          @postMessage {config: {gameId: config.gameId}, method, params}
         .then null, (err) ->
           frameError = err
           localMethod({method, params})
@@ -88,6 +91,7 @@ class SDK
   validateParent: =>
     @postMessage
       method: 'ping'
+      config: {gameId: 1}
 
   methodToFn: (method) =>
     switch method
@@ -120,21 +124,20 @@ class SDK
     else
       @pendingMessages[message.id].resolve message.result
 
-  messageId = 1
-  postMessage: ({method, params}) =>
+  postMessage: ({config, method, params}) =>
     deferred = new Promiz()
     message = {method, params}
 
     try
-      message.id = messageId
-      message.gameId = @config.gameId
-      message.accessToken = @status?.accessToken
+      message.id = @nextMessageId
+      message.gameId = config.gameId
+      message.accessToken = config.accessToken
       message._clay = true
       message.jsonrpc = '2.0'
 
       @pendingMessages[message.id] = deferred
 
-      messageId += 1
+      @nextMessageId += 1
 
       # It's not possible to tell who the parent is here
       # The client has to ping the parent and get a response to verify

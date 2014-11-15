@@ -79,13 +79,16 @@ describe 'sdk', ->
 
     describe 'config', ->
       it 'sets gameId', ->
+        Clay.config = new Promiz()
+
         routePost 'auth.getStatus',
           data:
             result: {accessToken: 1}
 
         Clay.init({gameId: '2'})
         .then ->
-          Clay.config.gameId.should.be '2'
+          Clay.config.then (config) ->
+            config.gameId.should.be '2'
 
     describe 'signature', ->
       it 'gameId type checks undefined', ->
@@ -254,9 +257,10 @@ describe 'sdk', ->
 
     describe 'domain verification', ->
       before ->
-        Clay.config.debug = false
-        Clay.initHasBeenCalled = true
-        ClayRoot.__set__ 'IS_FRAMED', true
+        Clay.config.then (config) ->
+          config.debug = false
+          Clay.initHasBeenCalled = true
+          ClayRoot.__set__ 'IS_FRAMED', true
 
       it 'Succeeds on valid domains', ->
         trusted = process.env.TRUSTED_DOMAIN or 'clay.io'
