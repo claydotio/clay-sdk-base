@@ -59,7 +59,7 @@ routePost = (method, {origin, data}) ->
 routePost 'ping', {}
 
 describe 'sdk', ->
-  @timeout 200
+  @timeout 2000
 
   describe 'version', ->
     it 'has version', ->
