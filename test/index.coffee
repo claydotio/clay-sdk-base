@@ -266,6 +266,8 @@ describe 'sdk', ->
             openCnt.should.be 1
 
     describe 'domain verification', ->
+      @timeout 1000
+
       it 'Succeeds on valid domains', ->
         domains = [
           "http://#{TRUSTED_DOMAIN}/"
