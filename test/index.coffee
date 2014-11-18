@@ -111,7 +111,13 @@ describe 'sdk', ->
         routePost 'auth.getStatus', origin: 'http://evil.io'
 
         new Promise (resolve, reject) ->
+
+          resolveTimeout = window.setTimeout ->
+            resolve()
+          , 100
+
           ClayRoot.__set__ 'window.onerror', (err) ->
+            window.clearTimeout resolveTimeout
             resolve()
 
           Clay.init({gameId: '1'})
@@ -306,7 +312,12 @@ describe 'sdk', ->
               data:
                 result: {test: true}
 
+            resolveTimeout = window.setTimeout ->
+              resolve()
+            , 100
+
             ClayRoot.__set__ 'window.onerror', (err) ->
+              window.clearTimeout resolveTimeout
               resolve()
 
             Clay.client method: 'kik.getUser'

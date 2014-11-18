@@ -124,7 +124,6 @@ class SDK
     message = JSON.parse e.data
 
     unless message.id
-      console.log 'MISSING ID!!!!'
       return
 
     if message.error
