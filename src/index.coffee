@@ -13,6 +13,7 @@ class SDK
     @config = new Promise (@resolve, @reject) -> null
 
     # Private
+    @debug = false
     @initHasBeenCalled = false
     @pendingMessages = {}
     @nextMessageId = 1
@@ -25,25 +26,23 @@ class SDK
       return Promise.reject new Error 'Missing or invalid gameId'
 
     @initHasBeenCalled = true
+    @debug = Boolean debug
 
     if IS_FRAMED
       @validateParent()
       .then =>
         @postMessage
-          config:
-            gameId: gameId
+          config: {gameId}
           method: 'auth.getStatus'
       .then (status) =>
         # TODO: Token may be invalid
         @config.resolve
-          debug: Boolean debug
           gameId: gameId
           accessToken: status?.accessToken
 
         return @config
     else
       @config.resolve
-        debug: Boolean debug
         gameId: gameId
         accessToken: null
 
@@ -74,16 +73,14 @@ class SDK
     localMethod = ({method, params}) =>
       return @methodToFn(method).apply null, params
 
-    return @config.then (config) =>
+    return @config.then ({gameId}) =>
       if IS_FRAMED
         frameError = null
-        return @validateParent()
-        .then =>
-          @postMessage {config: {gameId: config.gameId}, method, params}
-        .then null, (err) ->
+        return @postMessage {config: {gameId}, method, params}
+        .catch (err) ->
           frameError = err
           localMethod({method, params})
-        .then null, (err) ->
+        .catch (err) ->
           if err.message is 'Method not found' and frameError isnt null
             throw frameError
           else
@@ -121,7 +118,7 @@ class SDK
     return regex.test origin
 
   onMessage: (e) =>
-    if not @config.debug and not @isValidOrigin e.origin
+    if not @debug and not @isValidOrigin e.origin
       throw new Error "Invalid origin #{e.origin}"
 
     message = JSON.parse e.data

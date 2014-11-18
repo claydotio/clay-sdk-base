@@ -32,35 +32,38 @@ TRUSTED_DOMAIN = process.env.TRUSTED_DOMAIN or 'clay.io'
 
 postRoutes = {}
 
-window.parent =
-  postMessage: (messageString, targetOrigin) ->
-    targetOrigin.should.be '*'
-    message = JSON.parse messageString
-    message.id.should.be.a.Number
-    message._clay.should.be true
-    message.jsonrpc.should.be '2.0'
-    message.gameId.should.be.a.String
+ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
+  targetOrigin.should.be '*'
+  message = JSON.parse messageString
+  message.id.should.be.a.Number
+  message._clay.should.be true
+  message.jsonrpc.should.be '2.0'
+  message.gameId.should.be.a.String
 
-    postRoutes[message.method].should.exist
+  postRoutes[message.method].should.exist
 
-    e = document.createEvent 'Event'
-    e.initEvent 'message', true, true
+  e = document.createEvent 'Event'
+  e.initEvent 'message', true, true
 
-    e.origin = postRoutes[message.method].origin or ('http://' + TRUSTED_DOMAIN)
-    e.data = JSON.stringify _.defaults(
-      {id: message.id}
-      postRoutes[message.method].data
-    )
+  e.origin = postRoutes[message.method].origin or ('http://' + TRUSTED_DOMAIN)
+  e.data = JSON.stringify _.defaults(
+    {id: message.id}
+    postRoutes[message.method].data
+  )
 
-    window.dispatchEvent e
+  window.dispatchEvent e
 
 routePost = (method, {origin, data}) ->
   postRoutes[method] = {origin, data}
 
 routePost 'ping', {}
+routePost 'auth.getStatus',
+  data:
+    result: {accessToken: 1}
+
 
 describe 'sdk', ->
-  @timeout 1000
+  @timeout 200
 
   describe 'version', ->
     it 'has version', ->
@@ -69,10 +72,6 @@ describe 'sdk', ->
   describe 'init()', ->
     describe 'status', ->
       it 'returns access token', ->
-
-        routePost 'auth.getStatus',
-          data:
-            result: {accessToken: 1}
 
         Clay.init({gameId: '1'})
         .then (status) ->
@@ -112,7 +111,7 @@ describe 'sdk', ->
         routePost 'auth.getStatus', origin: 'http://evil.io'
 
         new Promise (resolve, reject) ->
-          window.onerror = (err) ->
+          ClayRoot.__set__ 'window.onerror', (err) ->
             resolve()
 
           Clay.init({gameId: '1'})
@@ -122,15 +121,15 @@ describe 'sdk', ->
             reject new Error 'Non-global error'
 
       it 'allows invalid domains in debug mode', ->
-        routePost 'auth.getStatus', origin: 'http://clay.io'
+        routePost 'auth.getStatus', origin: 'http://evil.io'
         Clay.init({gameId: '1', debug: true})
 
   describe 'client()', ->
-
     describe 'state errors', ->
-      it 'errors if init hasn\'t been called', ->
+      before ->
         Clay.initHasBeenCalled = false
 
+      it 'errors if init hasn\'t been called', ->
         Clay.client method: 'kik.send'
         .then (res) ->
           throw new Error 'Missing error'
@@ -185,9 +184,6 @@ describe 'sdk', ->
           err.message.should.be 'Params must be an array'
 
     describe 'Posting', ->
-      before ->
-        Clay.initHasBeenCalled = true
-        ClayRoot.__set__ 'IS_FRAMED', true
 
       it 'posts to parent frame', ->
         routePost 'kik.getUser',
@@ -213,9 +209,6 @@ describe 'sdk', ->
 
     describe 'share.any', ->
       describe 'framed', ->
-        before ->
-          Clay.initHasBeenCalled = true
-          ClayRoot.__set__ 'IS_FRAMED', true
 
         it 'posts to parent', ->
           routePost 'share.any',
@@ -234,7 +227,7 @@ describe 'sdk', ->
               error: {message: 'something went wrong'}
 
           openCnt = 0
-          window.open = (url) ->
+          ClayRoot.__set__ 'window.open', (url) ->
             openCnt += 1
             url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
 
@@ -255,13 +248,10 @@ describe 'sdk', ->
             err.message.should.be 'text parameter is missing or invalid'
 
       describe 'local', ->
-        before ->
-          Clay.initHasBeenCalled = true
-          ClayRoot.__set__ 'IS_FRAMED', false
 
         it 'tweets', ->
           openCnt = 0
-          window.open = (url) ->
+          ClayRoot.__set__ 'window.open', (url) ->
             openCnt += 1
             url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
 
@@ -270,12 +260,6 @@ describe 'sdk', ->
             openCnt.should.be 1
 
     describe 'domain verification', ->
-      before ->
-        Clay.config.then (config) ->
-          config.debug = false
-          Clay.initHasBeenCalled = true
-          ClayRoot.__set__ 'IS_FRAMED', true
-
       it 'Succeeds on valid domains', ->
         domains = [
           "http://#{TRUSTED_DOMAIN}/"
@@ -296,16 +280,18 @@ describe 'sdk', ->
         ]
 
         Promise.map domains, (domain) ->
-          routePost 'kik.getUser',
+          routePost 'domain.test',
             origin: domain
             data:
               result: {test: true}
 
-          Clay.client method: 'kik.getUser'
+          Clay.client method: 'domain.test'
           .then (user) ->
             user.test.should.be true
 
       it 'Errors on invalid domains', ->
+        Clay.debug = false
+
         domains = [
           'http://evil.io/'
           'http://sub.evil.io/'
@@ -320,7 +306,7 @@ describe 'sdk', ->
               data:
                 result: {test: true}
 
-            window.onerror = (err) ->
+            ClayRoot.__set__ 'window.onerror', (err) ->
               resolve()
 
             Clay.client method: 'kik.getUser'
