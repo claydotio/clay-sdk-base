@@ -1,4 +1,7 @@
-Promiz = require 'promiz'
+Promise = require 'promiz'
+
+# Promise polyfill
+window.Promise = window.Promise or require 'promiz'
 
 TRUSTED_DOMAIN = (process.env.TRUSTED_DOMAIN or 'clay.io')
 IS_FRAMED = window.self isnt window.top
@@ -7,7 +10,7 @@ class SDK
   constructor: ->
     # Public
     @version = 'v0.0.7'
-    @config = new Promiz()
+    @config = new Promise (@resolve, @reject) -> null
 
     # Private
     @initHasBeenCalled = false
@@ -19,7 +22,7 @@ class SDK
   # Public
   init: ({gameId, debug} = {}) =>
     unless typeof gameId is 'string' and /^[0-9]+$/.test gameId
-      return new Promiz().reject new Error 'Missing or invalid gameId'
+      return Promise.reject new Error 'Missing or invalid gameId'
 
     @initHasBeenCalled = true
 
@@ -48,21 +51,21 @@ class SDK
 
   login: ({scope}) ->
     # TODO: OAuth magic. Gets token
-    return new Promiz().reject new Error 'Not Implemented'
+    return Promise.reject new Error 'Not Implemented'
 
   api: ->
     # TODO: implement
-    return new Promiz().reject new Error 'Not Implemented'
+    return Promise.reject new Error 'Not Implemented'
 
   client: ({method, params} = {}) =>
     unless @initHasBeenCalled
-      return new Promiz().reject new Error 'Must call Clay.init() first'
+      return Promise.reject new Error 'Must call Clay.init() first'
 
     unless typeof method is 'string'
-      return new Promiz().reject new Error 'Missing or invalid method'
+      return Promise.reject new Error 'Missing or invalid method'
 
     if params? and Object::toString.call(params) isnt '[object Array]'
-      return new Promiz().reject new Error 'Params must be an array'
+      return Promise.reject new Error 'Params must be an array'
 
     localMethod = ({method, params}) =>
       return @methodToFn(method).apply null, params
@@ -82,7 +85,7 @@ class SDK
           else
             throw err
       else
-        return new Promiz().resolve localMethod({method, params})
+        return Promise.resolve localMethod({method, params})
 
   # Private
 
@@ -125,7 +128,7 @@ class SDK
       @pendingMessages[message.id].resolve message.result
 
   postMessage: ({config, method, params}) =>
-    deferred = new Promiz()
+    deferred = new Promise (@resolve, @reject) -> null
     message = {method, params}
 
     try
