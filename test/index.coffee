@@ -162,12 +162,13 @@ describe 'sdk', ->
         , (err) ->
           err.message.should.be 'Missing or invalid method'
 
-      it 'errors if params is an object', ->
-        Clay.client(method: 'kik.send', params: {})
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
-          err.message.should.be 'Params must be an array'
+      it 'succeeds if params is an object', ->
+        routePost 'share.any',
+          origin: 'http://clay.io'
+          data:
+            result: {test: true}
+
+        Clay.client(method: 'share.any', params: {text: 'test'})
 
       it 'errors if params is a string', ->
         Clay.client(method: 'kik.send', params: 'param')
@@ -240,6 +241,18 @@ describe 'sdk', ->
           Clay.client method: 'share.any', params: [{text: 'Hello World'}]
           .then (res) ->
             openCnt.should.be 1
+
+        it 'errors if missing text', ->
+          routePost 'share.any',
+            origin: 'http://clay.io'
+            data:
+              error: {message: 'something went wrong'}
+
+          Clay.client method: 'share.any'
+          .then ->
+            throw new Error 'Error expected'
+          , (err) ->
+            err.message.should.be 'text parameter is missing or invalid'
 
       describe 'local', ->
         before ->

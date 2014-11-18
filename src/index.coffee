@@ -64,6 +64,10 @@ class SDK
     unless typeof method is 'string'
       return Promise.reject new Error 'Missing or invalid method'
 
+    # Normalize params to an array if passed an object
+    if params? and Object::toString.call(params) is '[object Object]'
+      params = [params]
+
     if params? and Object::toString.call(params) isnt '[object Array]'
       return Promise.reject new Error 'Params must be an array'
 
@@ -101,7 +105,10 @@ class SDK
       when 'share.any' then @shareAny
       else -> throw new Error 'Method not found'
 
-  shareAny: ({text}) ->
+  shareAny: ({text} = {}) ->
+    unless typeof text is 'string'
+      throw new Error 'text parameter is missing or invalid'
+
     tweet = (text) ->
       text = encodeURIComponent text.substr 0, 140
       window.open "https://twitter.com/intent/tweet?text=#{text}"
