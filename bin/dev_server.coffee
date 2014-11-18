@@ -20,7 +20,7 @@ new WebpackDevServer webpack({
   output:
     library: 'Clay'
     path: __dirname,
-    filename: 'clay_sdk.js',
+    filename: 'clay_sdk_base.js',
     publicPath: "//#{webpackDevHostname}:#{webpackDevPort}/"
   devtool: '#inline-source-map'
   module:
