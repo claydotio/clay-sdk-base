@@ -9,7 +9,7 @@ IS_FRAMED = window.self isnt window.top
 class SDK
   constructor: ->
     # Public
-    @version = 'v0.0.7'
+    @version = 'v0.0.8'
     @config = new Promise (@resolve, @reject) -> null
 
     # Private
