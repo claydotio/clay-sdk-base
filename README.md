@@ -30,9 +30,7 @@ Clay('client.share.any', {text: 'Come play a game with me!'})
 ##### Init
 
 ```js
-Clay('init', {gameId: 0000}, function () {
-  // Clay has been initialized
-})
+Clay('init', {gameId: 0000})
 ```
 
 ##### Share Any
@@ -43,6 +41,7 @@ See [Clay.io SDK](https://github.com/claydotio/clay-sdk) docs for details.
 ```js
 Clay('client.share.any', {text: 'Hello World'})
 ```
+
 
 ##### Version
 
