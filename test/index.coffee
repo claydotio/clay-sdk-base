@@ -42,6 +42,9 @@ ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
 
   postRoutes[message.method].should.exist
 
+  if postRoutes[message.method].timeout
+    return
+
   e = document.createEvent 'Event'
   e.initEvent 'message', true, true
 
@@ -53,8 +56,8 @@ ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
 
   window.dispatchEvent e
 
-routePost = (method, {origin, data}) ->
-  postRoutes[method] = {origin, data}
+routePost = (method, {origin, data, timeout}) ->
+  postRoutes[method] = {origin, data, timeout}
 
 routePost 'ping', {}
 routePost 'auth.getStatus',
@@ -212,6 +215,17 @@ describe 'sdk', ->
           throw new Error 'Error expected'
         , (err) ->
           err.message.should.be 'abc'
+
+      it 'times out', ->
+        ClayRoot.__set__ 'ONE_SECOND_MS', 10
+        routePost 'infinite.loop', timeout: true
+
+        Clay.client method: 'infinite.loop'
+        .then ->
+          throw new Error 'Error expected'
+        , (err) ->
+          ClayRoot.__set__ 'ONE_SECOND_MS', 1000
+          err.message.should.be 'Message Timeout'
 
     describe 'share.any', ->
       describe 'framed', ->

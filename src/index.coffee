@@ -5,6 +5,8 @@ window.Promise = window.Promise or require 'promiz'
 
 TRUSTED_DOMAIN = (process.env.TRUSTED_DOMAIN or 'clay.io')
 IS_FRAMED = window.self isnt window.top
+ONE_SECOND_MS = 1000
+TWEET_LENGTH = 140
 
 class SDK
   constructor: ->
@@ -107,7 +109,7 @@ class SDK
       throw new Error 'text parameter is missing or invalid'
 
     tweet = (text) ->
-      text = encodeURIComponent text.substr 0, 140
+      text = encodeURIComponent text.substr 0, TWEET_LENGTH
       window.open "https://twitter.com/intent/tweet?text=#{text}"
 
     return tweet(text)
@@ -152,6 +154,10 @@ class SDK
 
     catch err
       deferred.reject err
+
+    window.setTimeout ->
+      deferred.reject new Error 'Message Timeout'
+    , ONE_SECOND_MS
 
     return deferred
 
