@@ -42,11 +42,10 @@ See [Clay.io SDK](https://github.com/claydotio/clay-sdk) docs for details.
 Clay('client.share.any', {text: 'Hello World'})
 ```
 
-
 ##### Version
 
 ```js
-Clay('version', function (version) {
+Clay('version', function (err, version) {
   console.log(version);
 })
 ```
