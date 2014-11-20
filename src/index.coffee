@@ -17,7 +17,7 @@ pendingMessages = {}
 Clay = (method, params, cb = -> null) ->
   if typeof params is 'function'
     cb = params
-    params = null
+    params = []
 
   # Normalize params to an array if passed an object
   if params? and Object::toString.call(params) is '[object Object]'
