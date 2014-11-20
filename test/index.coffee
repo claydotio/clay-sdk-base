@@ -268,23 +268,18 @@ describe 'sdk', ->
       it 'registers function', (done) ->
         rootConfig = new Promiz (@resolve, @reject) -> null
         ClayRoot.__set__ 'config',  rootConfig
-        config = null
 
-        Clay 'register', {method: 'ui', fn: (method, params, cb) ->
-          config.then ({gameId}) ->
-            {
-              test: true
-              hello: params[0].hello
-              gameId: gameId
-            }
-          .then (x) -> cb null, x
-          .catch cb
-
-        }, (err, res) ->
-          res.then.should.be.a.Function
-          config = res
-          if err
-            done(err)
+        Clay 'register', {method: 'ui', fn: (config) ->
+          (method, params, cb) ->
+            config.then ({gameId}) ->
+              {
+                test: true
+                hello: params[0].hello
+                gameId: gameId
+              }
+            .then (x) -> cb null, x
+            .catch cb
+        }
 
         rootConfig.resolve {gameId: '1'}
 

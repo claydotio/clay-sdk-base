@@ -98,9 +98,8 @@ methods = {
     .then (x) -> cb null, x
     .catch cb
 
-  register: (_, [{method, fn}], cb) ->
-    cb null, config
-    methods[method] = fn
+  register: (_, [{method, fn}]) ->
+    methods[method] = fn(config)
 }
 
 methodToFn = (method) ->
