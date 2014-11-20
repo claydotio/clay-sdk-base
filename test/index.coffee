@@ -26,7 +26,6 @@ rewire = require 'rewire'
 
 packageConfig = require '../package.json'
 ClayRoot = rewire 'index'
-OLDCLAY = ClayRoot.__get__ 'sdk'
 Clay = ClayRoot.__get__ 'Clay'
 
 TRUSTED_DOMAIN = process.env.TRUSTED_DOMAIN or 'clay.io'
