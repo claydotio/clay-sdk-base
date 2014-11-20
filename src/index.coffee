@@ -29,7 +29,7 @@ Clay = (method, params, cb = -> null) ->
   methods[methodRoot].apply 0, [method, params, cb]
 
 methods = {
-  version: (method, params, cb) ->
+  version: (_, __, cb) ->
     cb null, 'v0.0.9'
 
   init: (method, [params], cb) ->
@@ -97,6 +97,10 @@ methods = {
     )
     .then (x) -> cb null, x
     .catch cb
+
+  register: (_, [{method, fn}], cb) ->
+    cb null, config
+    methods[method] = fn
 }
 
 methodToFn = (method) ->
@@ -174,9 +178,10 @@ window.addEventListener 'message', onMessage
 
 module.exports = Clay
 
-# Initialize
-q = window.Clay?.q or []
+# Initialize, allowing time for syncronous registration of services
+window.setTimeout ->
+  q = window.Clay?.q or []
 
-window.Clay = Clay
-for call in q
-  Clay.apply 0, call
+  window.Clay = Clay
+  for call in q
+    Clay.apply 0, call
