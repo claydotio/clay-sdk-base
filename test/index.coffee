@@ -26,7 +26,8 @@ rewire = require 'rewire'
 
 packageConfig = require '../package.json'
 ClayRoot = rewire 'index'
-Clay = ClayRoot.__get__ 'sdk'
+OLDCLAY = ClayRoot.__get__ 'sdk'
+Clay = ClayRoot.__get__ 'Clay'
 
 TRUSTED_DOMAIN = process.env.TRUSTED_DOMAIN or 'clay.io'
 
@@ -64,49 +65,50 @@ routePost 'auth.getStatus',
   data:
     result: {accessToken: 1}
 
-
 describe 'sdk', ->
   @timeout 200
 
   describe 'version', ->
-    it 'has version', ->
-      Clay.version.should.be 'v' + packageConfig.version
+    it 'has version', (done) ->
+      Clay 'version', (err, v) ->
+        v.should.be 'v' + packageConfig.version
+
+        done(err)
 
   describe 'init()', ->
     describe 'status', ->
-      it 'returns access token', ->
+      it 'returns access token', (done) ->
 
-        Clay.init({gameId: '1'})
-        .then (status) ->
+        Clay 'init', {gameId: '1'}, (err, status) ->
           status.accessToken.should.be.a.Number
+          done(err)
 
     describe 'config', ->
-      it 'sets gameId', ->
-        Clay.config = new Promiz()
+      it 'sets gameId', (done) ->
+        cfg = new Promiz (@resolve, @reject) -> null
+        ClayRoot.__set__ 'config', cfg
 
         routePost 'auth.getStatus',
           data:
             result: {accessToken: 1}
 
-        Clay.init({gameId: '2'})
-        .then ->
-          Clay.config.then (config) ->
-            config.gameId.should.be '2'
+        Clay 'init', {gameId: '2'}
+
+        cfg.then (config) ->
+          config.gameId.should.be '2'
+        .then (x) -> done()
+        .catch done
 
     describe 'signature', ->
-      it 'gameId type checks undefined', ->
-        Clay.init()
-        .then ->
-          throw new Error 'Expected error'
-        , (err) ->
+      it 'gameId type checks undefined', (done) ->
+        Clay 'init', {}, (err) ->
           err.message.should.be 'Missing or invalid gameId'
+          done()
 
-      it 'gameId type checks number', ->
-        Clay.init(gameId: 1)
-        .then ->
-          throw new Error 'Expected error'
-        , (err) ->
+      it 'gameId type checks number', (done) ->
+        Clay 'init', {gameId: 1}, (err) ->
           err.message.should.be 'Missing or invalid gameId'
+          done()
 
     describe 'domain verification when framed', ->
       it 'dissallows invalid domains', ->
@@ -123,124 +125,104 @@ describe 'sdk', ->
             window.clearTimeout resolveTimeout
             resolve()
 
-          Clay.init({gameId: '1'})
-          .then (res) ->
-            reject new Error 'Missing error'
-          , (err) ->
+          Clay 'init', {gameId: '1'}, ->
             reject new Error 'Non-global error'
 
-      it 'allows invalid domains in debug mode', ->
+
+      it 'allows invalid domains in debug mode', (done) ->
         routePost 'auth.getStatus', origin: 'http://evil.io'
-        Clay.init({gameId: '1', debug: true})
+        Clay 'init', {gameId: '1', debug: true}, done
 
   describe 'client()', ->
     describe 'state errors', ->
       before ->
-        Clay.initHasBeenCalled = false
+        ClayRoot.__set__ 'initHasBeenCalled', false
 
-      it 'errors if init hasn\'t been called', ->
-        Clay.client method: 'kik.send'
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
-          err.message.should.be 'Must call Clay.init() first'
+      it 'errors if init hasn\'t been called', (done) ->
+        Clay 'client.kik.send', (err) ->
+          err.message.should.be 'Must call Clay(\'init\') first'
+          done()
 
     describe 'signature', ->
       before ->
-        Clay.initHasBeenCalled = true
+        ClayRoot.__set__ 'initHasBeenCalled', true
+        ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}
 
-      it 'errors if method missing', ->
-        Clay.client()
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
+      it 'errors if method missing', (done) ->
+        Clay 'client', (err) ->
           err.message.should.be 'Missing or invalid method'
+          done()
 
-      it 'errors if method is an object', ->
-        Clay.client(method: {})
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
-          err.message.should.be 'Missing or invalid method'
-
-      it 'errors is method is a number', ->
-        Clay.client(method: 123)
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
-          err.message.should.be 'Missing or invalid method'
-
-      it 'succeeds if params is an object', ->
+      it 'succeeds if params is an object', (done) ->
         routePost 'share.any',
           origin: 'http://clay.io'
           data:
             result: {test: true}
 
-        Clay.client(method: 'share.any', params: {text: 'test'})
+        Clay 'client.share.any', {text: 'test'}, done
 
-      it 'errors if params is a string', ->
-        Clay.client(method: 'kik.send', params: 'param')
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
+      it 'errors if params is a string', (done) ->
+        Clay 'client.kik.send', 'param', (err) ->
           err.message.should.be 'Params must be an array'
+          done()
 
-      it 'errors if params is a number', ->
-        Clay.client(method: 'kik.send', params: 123)
-        .then (res) ->
-          throw new Error 'Missing error'
-        , (err) ->
+      it 'errors if params is a number', (done) ->
+        Clay 'client.kik.send', 123, (err) ->
           err.message.should.be 'Params must be an array'
+          done()
 
-    describe 'Posting', ->
+    describe  'Posting', ->
+      before ->
+        ClayRoot.__set__ 'initHasBeenCalled', true
+        ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}
 
-      it 'posts to parent frame', ->
+      it 'posts to parent frame', (done) ->
         routePost 'kik.getUser',
           origin: 'http://clay.io'
           data:
             result: {test: true}
 
-        Clay.client method: 'kik.getUser'
-        .then (user) ->
+        Clay 'client.kik.getUser', (err, user) ->
+          should.not.exist err
           user.test.should.be true
+          done()
 
-      it 'recieved errors', ->
+      it 'recieved errors', (done) ->
         routePost 'kik.getUser',
           origin: 'http://clay.io'
           data:
             error: {message: 'abc'}
 
-        Clay.client method: 'kik.getUser'
-        .then ->
-          throw new Error 'Error expected'
-        , (err) ->
+        Clay 'client.kik.getUser', (err) ->
           err.message.should.be 'abc'
+          done()
 
-      it 'times out', ->
+      it 'times out', (done) ->
         ClayRoot.__set__ 'ONE_SECOND_MS', 10
         routePost 'infinite.loop', timeout: true
 
-        Clay.client method: 'infinite.loop'
-        .then ->
-          throw new Error 'Error expected'
-        , (err) ->
+        Clay 'client.infinite.loop', (err) ->
           ClayRoot.__set__ 'ONE_SECOND_MS', 1000
           err.message.should.be 'Message Timeout'
+          done()
 
     describe 'share.any', ->
       describe 'framed', ->
+        before ->
+          ClayRoot.__set__ 'initHasBeenCalled', true
+          ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}
 
-        it 'posts to parent', ->
+        it 'posts to parent', (done) ->
           routePost 'share.any',
             origin: 'http://clay.io'
             data:
               result: {test: true}
 
-          Clay.client method: 'share.any', params: [{text: 'Hello World'}]
-          .then (res) ->
+          Clay 'client.share.any', [{text: 'Hello World'}], (err, res) ->
             res.test.should.be true
+            done(err)
 
-        it 'falls back to local if parent fails', ->
+        it 'falls back to local if parent fails', (done) ->
           routePost 'share.any',
             origin: 'http://clay.io'
             data:
@@ -251,38 +233,42 @@ describe 'sdk', ->
             openCnt += 1
             url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
 
-          Clay.client method: 'share.any', params: [{text: 'Hello World'}]
-          .then (res) ->
+          Clay 'client.share.any', [{text: 'Hello World'}], (err, res) ->
             openCnt.should.be 1
+            done(err)
 
-        it 'errors if missing text', ->
+        it 'errors if missing text', (done) ->
           routePost 'share.any',
             origin: 'http://clay.io'
             data:
               error: {message: 'something went wrong'}
 
-          Clay.client method: 'share.any'
-          .then ->
-            throw new Error 'Error expected'
-          , (err) ->
+          Clay 'client.share.any', (err) ->
             err.message.should.be 'text parameter is missing or invalid'
+            done()
 
       describe 'local', ->
+        before ->
+          ClayRoot.__set__ 'initHasBeenCalled', true
+          ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}
 
-        it 'tweets', ->
+        it 'tweets', (done) ->
           openCnt = 0
           ClayRoot.__set__ 'window.open', (url) ->
             openCnt += 1
             url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
 
-          Clay.client method: 'share.any', params: [{text: 'Hello World'}]
-          .then (res) ->
+          Clay 'client.share.any', [{text: 'Hello World'}], (err, res) ->
             openCnt.should.be 1
+            done(err)
 
     describe 'domain verification', ->
       @timeout 1000
+      before ->
+        ClayRoot.__set__ 'initHasBeenCalled', true
+        ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}
 
-      it 'Succeeds on valid domains', ->
+      it 'Succeeds on valid domains', (done) ->
         domains = [
           "http://#{TRUSTED_DOMAIN}/"
           "https://#{TRUSTED_DOMAIN}/"
@@ -307,12 +293,15 @@ describe 'sdk', ->
             data:
               result: {test: true}
 
-          Clay.client method: 'domain.test'
-          .then (user) ->
+          Clay 'client.domain.test', (err, user) ->
             user.test.should.be true
+            if err
+              throw err
+        .then -> done()
+        .catch done
 
-      it 'Errors on invalid domains', ->
-        Clay.debug = false
+      it 'Errors on invalid domains', (done) ->
+        ClayRoot.__set__ 'debug', false
 
         domains = [
           'http://evil.io/'
@@ -336,8 +325,10 @@ describe 'sdk', ->
               window.clearTimeout resolveTimeout
               resolve()
 
-            Clay.client method: 'kik.getUser'
+            Clay 'client.kik.getUser'
             .then (res) ->
               reject new Error 'Missing error'
             , (err) ->
               reject new Error 'Non-global error'
+        .then -> done()
+        .catch done

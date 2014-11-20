@@ -18,7 +18,6 @@ entries = [
 new WebpackDevServer webpack({
   entry: entries
   output:
-    library: 'Clay'
     path: __dirname,
     filename: 'clay_sdk_base.js',
     publicPath: "//#{webpackDevHostname}:#{webpackDevPort}/"
