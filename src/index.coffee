@@ -4,7 +4,7 @@ TRUSTED_DOMAIN = (process.env.TRUSTED_DOMAIN or 'clay.io')
 IS_FRAMED = window.self isnt window.top
 ONE_SECOND_MS = 1000
 TWEET_LENGTH = 140
-VERSION = 'v0.0.8'
+VERSION = 'v1.0.1'
 
 
 config = new Promise (@resolve, @reject) -> null
@@ -33,7 +33,7 @@ Clay = (method, params, cb = -> null) ->
 
 methods = {
   version: (_, __, cb) ->
-    cb null, 'v1.0.0'
+    cb null, VERSION
 
   init: (method, [options], cb) ->
     (do ->

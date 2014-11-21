@@ -1,6 +1,6 @@
 {
   "name": "clay-sdk-base",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Clay.io SDK Base is a subset of the Clay.io SDK",
   "main": "src/index.coffee",
   "directories": {
