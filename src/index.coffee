@@ -23,6 +23,9 @@ Clay = (method, params, cb = -> null) ->
   if params? and Object::toString.call(params) is '[object Object]'
     params = [params]
 
+  if params? and Object::toString.call(params) isnt '[object Array]'
+    return cb new Error 'Params must be an array'
+
   methodRoot = method.split('.')[0]
   method = method.slice method.indexOf('.') + 1
 
@@ -30,12 +33,12 @@ Clay = (method, params, cb = -> null) ->
 
 methods = {
   version: (_, __, cb) ->
-    cb null, 'v0.0.9'
+    cb null, 'v1.0.0'
 
-  init: (method, [params], cb) ->
+  init: (method, [options], cb) ->
     (do ->
-      gameId = params.gameId
-      debug = Boolean params.debug
+      gameId = options.gameId
+      debug = Boolean options.debug
 
       unless typeof gameId is 'string' and /^[0-9]+$/.test gameId
         return cb new Error 'Missing or invalid gameId'
@@ -74,9 +77,6 @@ methods = {
       unless initHasBeenCalled
         return Promise.reject new Error 'Must call Clay(\'init\') first'
 
-      if params? and Object::toString.call(params) isnt '[object Array]'
-        return Promise.reject new Error 'Params must be an array'
-
       localMethod = ({method, params}) ->
         return methodToFn(method).apply null, params
 
@@ -86,7 +86,7 @@ methods = {
           return postMessage {config: {gameId}, method, params}
           .catch (err) ->
             frameError = err
-            localMethod({method, params})
+            return localMethod({method, params})
           .catch (err) ->
             if err.message is 'Method not found' and frameError isnt null
               throw frameError
@@ -110,6 +110,9 @@ methodToFn = (method) ->
 shareAny = ({text} = {}) ->
   unless typeof text is 'string'
     throw new Error 'text parameter is missing or invalid'
+
+  if text.length > TWEET_LENGTH
+    throw new Error 'No valid share method available'
 
   tweet = (text) ->
     text = encodeURIComponent text.substr 0, TWEET_LENGTH
@@ -177,7 +180,7 @@ window.addEventListener 'message', onMessage
 
 module.exports = Clay
 
-# Initialize, allowing time for syncronous registration of services
+# Initialize, allowing time for synchronous registration of services
 window.setTimeout ->
   q = window.Clay?.q or []
 
