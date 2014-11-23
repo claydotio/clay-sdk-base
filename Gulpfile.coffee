@@ -1,24 +1,20 @@
 _ = require 'lodash'
+del = require 'del'
 gulp = require 'gulp'
-nodemon = require 'gulp-nodemon'
-rename = require 'gulp-rename'
-clean = require 'gulp-clean'
-runSequence = require 'gulp-run-sequence'
-coffeelint = require 'gulp-coffeelint'
 karma = require('karma').server
-RewirePlugin = require 'rewire-webpack'
+rename = require 'gulp-rename'
 webpack = require 'gulp-webpack'
+nodemon = require 'gulp-nodemon'
+coffeelint = require 'gulp-coffeelint'
+RewirePlugin = require 'rewire-webpack'
 webpackSource = require 'webpack'
 
 karmaConf = require './karma.defaults'
-
-outFiles =
-  scripts: 'bundle.js'
+packangeConf = require './package.json'
 
 paths =
-  scripts: ['./src/**/*.coffee', './*.coffee']
-  tests: './test/**/*.coffee'
-  root: './src/index.coffee'
+  coffee: ['./src/**/*.coffee', './*.coffee', './test/**/*.coffee']
+  rootScripts: './src/index.coffee'
   rootTests: './test/index.coffee'
   dist: './dist/'
   build: './build/'
@@ -26,22 +22,17 @@ paths =
 gulp.task 'demo', ->
   gulp.start 'server'
 
-# compile sources: src/* -> dist/*
 gulp.task 'assets:prod', [
   'scripts:prod'
 ]
 
-# build for production
-gulp.task 'build', (cb) ->
-  runSequence 'clean:dist', 'assets:prod', cb
+gulp.task 'build', ['clean:dist', 'scripts:dist']
 
-# tests
-gulp.task 'test', [
-    'scripts:test'
-    'lint:tests'
-    'lint:scripts'
-  ], (cb) ->
+gulp.task 'test', ['scripts:test', 'lint'], (cb) ->
   karma.start _.defaults(singleRun: true, karmaConf), cb
+
+gulp.task 'watch', ->
+  gulp.watch paths.coffee, ['test:phantom']
 
 gulp.task 'test:phantom', ['scripts:test'], (cb) ->
   karma.start _.defaults({
@@ -49,8 +40,12 @@ gulp.task 'test:phantom', ['scripts:test'], (cb) ->
     browsers: ['PhantomJS']
   }, karmaConf), cb
 
-gulp.task 'scripts:test', ->
+gulp.task 'lint', ->
+  gulp.src paths.coffee
+    .pipe coffeelint()
+    .pipe coffeelint.reporter()
 
+gulp.task 'scripts:test', ->
   gulp.src paths.rootTests
   .pipe webpack
     devtool: '#inline-source-map'
@@ -67,48 +62,32 @@ gulp.task 'scripts:test', ->
     ]
     resolve:
       extensions: ['.coffee', '.js', '.json', '']
-      # browser-builtins is for modules requesting native node modules
-      modulesDirectories: ['web_modules', 'node_modules', './src',
-      './node_modules/browser-builtins/builtin']
+      modulesDirectories: ['node_modules', './src']
   .pipe rename 'tests.js'
   .pipe gulp.dest paths.build
 
+gulp.task 'test:phantom', ['scripts:test'], (cb) ->
+  karma.start _.defaults({
+    singleRun: true,
+    browsers: ['PhantomJS']
+  }, karmaConf), cb
 
-# run coffee-lint
+gulp.task 'clean:dist', (cb) ->
+  del paths.dist, cb
+
 gulp.task 'lint:tests', ->
   gulp.src paths.tests
     .pipe coffeelint()
     .pipe coffeelint.reporter()
 
-#
-# Dev server and watcher
-#
-
-# start the dev server
 gulp.task 'server', ->
-  # Don't actually watch for changes, just run the server
   nodemon {script: 'bin/dev_server.coffee', ext: 'null', ignore: ['**/*.*']}
 
-gulp.task 'watch:test', ->
-  gulp.watch paths.scripts.concat([paths.tests]), ['test:phantom']
-
-# run coffee-lint
-gulp.task 'lint:scripts', ->
-  gulp.src paths.scripts
-    .pipe coffeelint()
-    .pipe coffeelint.reporter()
-
-#
-# Production compilation
-#
-
-# rm -r dist
 gulp.task 'clean:dist', ->
   gulp.src paths.dist, read: false
     .pipe clean()
 
-# init.coffee --> dist/js/bundle.min.js
-gulp.task 'scripts:prod', ->
+gulp.task 'scripts:dist', ->
   gulp.src paths.root
   .pipe webpack
     module:

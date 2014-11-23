@@ -35,23 +35,24 @@ postRoutes = {}
 ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
   targetOrigin.should.be '*'
   message = JSON.parse messageString
-  message.id.should.be.a.Number
-  message._clay.should.be true
+  _.isNumber(message.id).should.be true
+  message._portal.should.be true
   message.jsonrpc.should.be '2.0'
-  message.gameId.should.be.a.String
 
   postRoutes[message.method].should.exist
 
   if postRoutes[message.method].timeout
     return
 
+  result = postRoutes[message.method].data
+
   e = document.createEvent 'Event'
   e.initEvent 'message', true, true
 
   e.origin = postRoutes[message.method].origin or ('http://' + TRUSTED_DOMAIN)
   e.data = JSON.stringify _.defaults(
-    {id: message.id}
-    postRoutes[message.method].data
+    {id: message.id, _portal: true}
+    result
   )
 
   window.dispatchEvent e
@@ -59,7 +60,7 @@ ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
 routePost = (method, {origin, data, timeout}) ->
   postRoutes[method] = {origin, data, timeout}
 
-routePost 'ping', {}
+routePost 'ping', {data: result: 'pong'}
 routePost 'auth.getStatus',
   data:
     result: {accessToken: 1}
@@ -110,26 +111,16 @@ describe 'sdk', ->
           done()
 
     describe 'domain verification when framed', ->
-      it 'dissallows invalid domains', ->
+      it 'dissallows invalid domains', (done) ->
 
-        routePost 'auth.getStatus', origin: 'http://evil.io'
+        routePost 'auth.getStatus', origin: 'http://evil.io', data: result: '1'
 
-        new Promise (resolve, reject) ->
-
-          resolveTimeout = window.setTimeout ->
-            resolve()
-          , 100
-
-          ClayRoot.__set__ 'window.onerror', (err) ->
-            window.clearTimeout resolveTimeout
-            resolve()
-
-          Clay 'init', {gameId: '1'}, ->
-            reject new Error 'Non-global error'
-
+        Clay 'init', {gameId: '1'}, (err) ->
+          err.should.exist
+          done()
 
       it 'allows invalid domains in debug mode', (done) ->
-        routePost 'auth.getStatus', origin: 'http://evil.io'
+        routePost 'auth.getStatus', origin: 'http://evil.io', data: result: '1'
         Clay 'init', {gameId: '1', debug: true}, done
 
   describe 'client()', ->
@@ -158,7 +149,8 @@ describe 'sdk', ->
           data:
             result: {test: true}
 
-        Clay 'client.share.any', {text: 'test'}, done
+        Clay 'client.share.any', {text: 'test'}, (err) ->
+          done(err)
 
       it 'errors if params is a string', (done) ->
         Clay 'client.kik.send', 'param', (err) ->
@@ -197,11 +189,13 @@ describe 'sdk', ->
           done()
 
       it 'times out', (done) ->
-        ClayRoot.__set__ 'ONE_SECOND_MS', 10
+        portal = ClayRoot.__get__ 'portal'
         routePost 'infinite.loop', timeout: true
 
+        portal.down()
+        portal.up timeout: 1
+
         Clay 'client.infinite.loop', (err) ->
-          ClayRoot.__set__ 'ONE_SECOND_MS', 1000
           err.message.should.be 'Message Timeout'
           done()
 
@@ -292,6 +286,7 @@ describe 'sdk', ->
     describe 'domain verification', ->
       @timeout 1000
       before ->
+        Clay 'init', {gameId: '1'}
         ClayRoot.__set__ 'initHasBeenCalled', true
         ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}
 
@@ -321,14 +316,13 @@ describe 'sdk', ->
               result: {test: true}
 
           Clay 'client.domain.test', (err, user) ->
-            user.test.should.be true
             if err
               throw err
+            user.test.should.be true
         .then -> done()
         .catch done
 
       it 'Errors on invalid domains', (done) ->
-        ClayRoot.__set__ 'debug', false
 
         domains = [
           'http://evil.io/'
@@ -344,18 +338,10 @@ describe 'sdk', ->
               data:
                 result: {test: true}
 
-            resolveTimeout = window.setTimeout ->
-              resolve()
-            , 100
+            Clay 'client.kik.getUser', (err) ->
+              unless err
+                reject new Error 'Missing error'
 
-            ClayRoot.__set__ 'window.onerror', (err) ->
-              window.clearTimeout resolveTimeout
               resolve()
-
-            Clay 'client.kik.getUser'
-            .then (res) ->
-              reject new Error 'Missing error'
-            , (err) ->
-              reject new Error 'Non-global error'
         .then -> done()
         .catch done
