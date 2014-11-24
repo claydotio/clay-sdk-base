@@ -46,6 +46,9 @@ ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
 
   result = postRoutes[message.method].data
 
+  if _.isFunction result
+    result = result(message)
+
   e = document.createEvent 'Event'
   e.initEvent 'message', true, true
 
@@ -208,7 +211,8 @@ describe 'sdk', ->
         it 'posts to parent', (done) ->
           routePost 'share.any',
             origin: 'http://clay.io'
-            data:
+            data: (message) ->
+              message.params[0].gameId.should.be '1'
               result: {test: true}
 
           Clay 'client.share.any', [{text: 'Hello World'}], (err, res) ->

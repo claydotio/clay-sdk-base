@@ -67,7 +67,16 @@ methods = {
       unless initHasBeenCalled
         return Promise.reject new Error 'Must call Clay(\'init\') first'
 
-      return portal.get method, params
+      config.then (config) ->
+        unless Object::toString.call(params) is '[object Array]'
+          params = [params]
+
+        # inject gameId and accessToken into request parameters
+        if typeof params[0] is 'object'
+          params[0].gameId = config.gameId
+          params[0].accessToken = config.accessToken
+
+        return portal.get method, params
     )
     .then (x) -> cb null, x
     .catch cb
