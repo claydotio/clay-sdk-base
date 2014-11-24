@@ -83,12 +83,8 @@ gulp.task 'lint:tests', ->
 gulp.task 'server', ->
   nodemon {script: 'bin/dev_server.coffee', ext: 'null', ignore: ['**/*.*']}
 
-gulp.task 'clean:dist', ->
-  gulp.src paths.dist, read: false
-    .pipe clean()
-
 gulp.task 'scripts:dist', ->
-  gulp.src paths.root
+  gulp.src paths.rootScripts
   .pipe webpack
     module:
       postLoaders: [
