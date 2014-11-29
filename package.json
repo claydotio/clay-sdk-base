@@ -1,6 +1,6 @@
 {
   "name": "clay-sdk-base",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Clay.io SDK Base is a subset of the Clay.io SDK",
   "main": "src/index.coffee",
   "directories": {
@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "coffee-script": "1.8.0",
-    "portal-gun": "0.0.2",
+    "portal-gun": "0.0.4",
     "promiz": "1.0.0"
   },
   "repository": {
