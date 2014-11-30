@@ -75,11 +75,6 @@ gulp.task 'test:phantom', ['scripts:test'], (cb) ->
 gulp.task 'clean:dist', (cb) ->
   del paths.dist, cb
 
-gulp.task 'lint:tests', ->
-  gulp.src paths.tests
-    .pipe coffeelint()
-    .pipe coffeelint.reporter()
-
 gulp.task 'server', ->
   nodemon {script: 'bin/dev_server.coffee', ext: 'null', ignore: ['**/*.*']}
 
