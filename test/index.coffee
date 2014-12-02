@@ -78,6 +78,12 @@ describe 'sdk', ->
 
         done(err)
 
+  describe 'signature', ->
+    it 'errors on invalid root method', (done) ->
+      Clay 'something', (err) ->
+        err.message.should.be 'Method not found'
+        done()
+
   describe 'init()', ->
     describe 'status', ->
       it 'returns access token', (done) ->

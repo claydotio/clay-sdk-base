@@ -23,6 +23,9 @@ Clay = (method, params, cb = -> null) ->
   methodRoot = method.split('.')[0]
   method = method.slice method.indexOf('.') + 1
 
+  unless methods[methodRoot]
+    return cb new Error 'Method not found'
+
   methods[methodRoot].apply 0, [method, params, cb]
 
 methods = {
