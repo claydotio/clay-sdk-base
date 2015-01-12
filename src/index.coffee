@@ -1,11 +1,22 @@
-Promise = require 'promiz'
+Promise = window.Promise or require 'promiz'
 portal = require 'portal-gun'
 
 TRUSTED_DOMAIN = (process.env.TRUSTED_DOMAIN or 'clay.io')
 TWEET_LENGTH = 140
 VERSION = 'v1.0.4'
 
-config = new Promise (@resolve, @reject) -> null
+deferredFactory = ->
+  resolve = null
+  reject = null
+  promise = new Promise (_resolve, _reject) ->
+    resolve = _resolve
+    reject = _reject
+  promise.resolve = resolve
+  promise.reject = reject
+
+  return promise
+
+config = deferredFactory()
 initHasBeenCalled = false
 
 Clay = (method, params, cb = -> null) ->
@@ -53,10 +64,12 @@ methods = {
         config.resolve
           gameId: gameId
           accessToken: status?.accessToken
+        return config
       .catch ->
         config.resolve
           gameId: gameId
           accessToken: null
+        return config
     )
     .then (x) ->
       cb null, x

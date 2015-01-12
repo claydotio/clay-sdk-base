@@ -18,6 +18,17 @@ unless Function::bind
     fBound:: = new fNOP()
     fBound
 
+deferredFactory = ->
+  resolve = null
+  reject = null
+  promise = new Promise (_resolve, _reject) ->
+    resolve = _resolve
+    reject = _reject
+  promise.resolve = resolve
+  promise.reject = reject
+
+  return promise
+
 should = require('clay-chai').should()
 Promise = require 'bluebird'
 Promiz = require 'promiz'
@@ -87,14 +98,13 @@ describe 'sdk', ->
   describe 'init()', ->
     describe 'status', ->
       it 'returns access token', (done) ->
-
         Clay 'init', {gameId: '1'}, (err, status) ->
           status.accessToken.should.be.a.Number
           done(err)
 
     describe 'config', ->
       it 'sets gameId', (done) ->
-        cfg = new Promiz (@resolve, @reject) -> null
+        cfg = deferredFactory()
         ClayRoot.__set__ 'config', cfg
 
         routePost 'auth.getStatus',
@@ -270,7 +280,7 @@ describe 'sdk', ->
         ClayRoot.__set__ 'initHasBeenCalled', false
 
       it 'registers function', (done) ->
-        rootConfig = new Promiz (@resolve, @reject) -> null
+        rootConfig = deferredFactory()
         ClayRoot.__set__ 'config',  rootConfig
 
         Clay 'register', {method: 'ui', fn: (config) ->

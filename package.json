@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "coffee-script": "1.8.0",
-    "portal-gun": "0.0.4",
+    "portal-gun": "0.0.6",
     "promiz": "1.0.0"
   },
   "repository": {
