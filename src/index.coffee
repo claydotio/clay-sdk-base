@@ -3,7 +3,7 @@ portal = require 'portal-gun'
 
 TRUSTED_DOMAIN = (process.env.TRUSTED_DOMAIN or 'clay.io')
 TWEET_LENGTH = 140
-VERSION = 'v1.0.6'
+VERSION = 'v1.1.0'
 
 deferredFactory = ->
   resolve = null
