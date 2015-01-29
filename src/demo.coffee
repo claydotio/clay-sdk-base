@@ -7,7 +7,9 @@ shareBtn.style.fontSize = '30px'
 document.body.appendChild(shareBtn)
 
 
-Clay.init(gameId: 1)
+Clay 'init', gameId: '1'
 
 shareBtn.addEventListener 'click', ->
-  Clay.client(method: 'share.any', params: [{text: 'abc'}])
+  Clay 'client.share.any', [{text: 'abc'}], (err) ->
+    if err
+      console.log err

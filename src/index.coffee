@@ -18,6 +18,7 @@ deferredFactory = ->
 
 config = deferredFactory()
 initHasBeenCalled = false
+windowOpeningMethods = ['share.any']
 
 Clay = (method, params, cb = -> null) ->
   if typeof params is 'function'
@@ -83,6 +84,10 @@ methods = {
       unless initHasBeenCalled
         return Promise.reject new Error 'Must call Clay(\'init\') first'
 
+      # must occur before any async code
+      if method in windowOpeningMethods
+        portal.beforeWindowOpen()
+
       config.then (config) ->
         unless Object::toString.call(params) is '[object Array]'
           params = [params]
@@ -111,7 +116,7 @@ portal.register 'share.any', ({text} = {}) ->
 
   tweet = (text) ->
     text = encodeURIComponent text.substr 0, TWEET_LENGTH
-    window.open "https://twitter.com/intent/tweet?text=#{text}"
+    portal.windowOpen "https://twitter.com/intent/tweet?text=#{text}"
 
   return tweet(text)
 

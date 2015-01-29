@@ -246,9 +246,14 @@ describe 'sdk', ->
             openCnt += 1
             url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
 
-          Clay 'client.share.any', [{text: 'Hello World'}], (err, res) ->
+          Clay 'client.share.any', [{text: 'Hello World'}], (err) ->
+            if err
+              done(err)
+
+          setTimeout ->
             openCnt.should.be 1
-            done(err)
+            done()
+          , 100
 
         it 'errors if missing text', (done) ->
           routePost 'share.any',
