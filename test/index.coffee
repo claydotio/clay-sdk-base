@@ -278,8 +278,10 @@ describe 'sdk', ->
             url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
 
           Clay 'client.share.any', [{text: 'Hello World'}], (err, res) ->
-            openCnt.should.be 1
-            done(err)
+            setTimeout ->
+              openCnt.should.be 1
+              done(err)
+            , 30
 
     describe 'register', ->
       before ->
