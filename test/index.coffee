@@ -242,9 +242,10 @@ describe 'sdk', ->
               error: {message: 'something went wrong'}
 
           openCnt = 0
-          ClayRoot.__set__ 'window.open', (url) ->
+          ClayRoot.__set__ 'window.open', (url, name) ->
             openCnt += 1
             url.should.be 'https://twitter.com/intent/tweet?text=Hello%20World'
+            name.should.be '_system'
 
           Clay 'client.share.any', [{text: 'Hello World'}], (err) ->
             if err

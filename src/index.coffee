@@ -116,7 +116,7 @@ portal.register 'share.any', ({text} = {}) ->
 
   tweet = (text) ->
     text = encodeURIComponent text.substr 0, TWEET_LENGTH
-    portal.windowOpen "https://twitter.com/intent/tweet?text=#{text}"
+    portal.windowOpen "https://twitter.com/intent/tweet?text=#{text}", '_system'
 
   return tweet(text)
 
