@@ -1,3 +1,5 @@
+# WARNING: WILL BE DEPRECATED MAY 2, 2015
+# Use [Clay.io SDK](https://github.com/claydotio/clay-sdk) instead
 ## Clay.io SDK Base
 
 Clay.io SDK Base is a subset of the [Clay.io SDK](https://github.com/claydotio/clay-sdk)
