@@ -66,11 +66,13 @@ methods = {
         config.resolve
           gameId: gameId
           accessToken: status?.accessToken
+          userId: status?.userId
         return config
       .catch ->
         config.resolve
           gameId: gameId
           accessToken: null
+          userId: null
         return config
     )
     .then (x) ->

@@ -79,7 +79,7 @@ routePost = (method, {origin, data, timeout}) ->
 routePost 'ping', {data: result: 'pong'}
 routePost 'auth.getStatus',
   data:
-    result: {accessToken: 1}
+    result: {accessToken: '1', userId: '1'}
 
 describe 'sdk', ->
   @timeout 200
@@ -101,7 +101,8 @@ describe 'sdk', ->
     describe 'status', ->
       it 'returns access token', (done) ->
         Clay 'init', {gameId: '1'}, (err, status) ->
-          status.accessToken.should.be.a.Number
+          status.accessToken.should.be '1'
+          status.userId.should.be '1'
           done(err)
 
     describe 'config', ->
@@ -111,7 +112,7 @@ describe 'sdk', ->
 
         routePost 'auth.getStatus',
           data:
-            result: {accessToken: 1}
+            result: {accessToken: '1'}
 
         Clay 'init', {gameId: '2'}
 
