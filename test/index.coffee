@@ -39,7 +39,8 @@ packageConfig = require '../package.json'
 ClayRoot = rewire 'index'
 Clay = ClayRoot.__get__ 'Clay'
 
-TRUSTED_DOMAIN = process.env.TRUSTED_DOMAIN or 'clay.io'
+TRUSTED_DOMAINS = process.env.TRUSTED_DOMAINS?.split(',') or
+                  ['clay.io', 'staging.wtf']
 
 postRoutes = {}
 
@@ -63,7 +64,8 @@ ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
   e = document.createEvent 'Event'
   e.initEvent 'message', true, true
 
-  e.origin = postRoutes[message.method].origin or ('http://' + TRUSTED_DOMAIN)
+  e.origin = postRoutes[message.method].origin or
+             ('http://' + TRUSTED_DOMAINS[0])
   e.data = JSON.stringify _.defaults(
     {id: message.id, _portal: true}
     result
@@ -320,21 +322,21 @@ describe 'sdk', ->
 
       it 'Succeeds on valid domains', (done) ->
         domains = [
-          "http://#{TRUSTED_DOMAIN}/"
-          "https://#{TRUSTED_DOMAIN}/"
-          "http://#{TRUSTED_DOMAIN}"
-          "https://#{TRUSTED_DOMAIN}"
+          "http://#{TRUSTED_DOMAINS[0]}/"
+          "https://#{TRUSTED_DOMAINS[0]}/"
+          "http://#{TRUSTED_DOMAINS[0]}"
+          "https://#{TRUSTED_DOMAINS[0]}"
 
           # Sub domains
-          "http://sub.#{TRUSTED_DOMAIN}/"
-          "https://sub.#{TRUSTED_DOMAIN}/"
-          "http://sub.#{TRUSTED_DOMAIN}"
-          "https://sub.#{TRUSTED_DOMAIN}"
+          "http://sub.#{TRUSTED_DOMAINS[0]}/"
+          "https://sub.#{TRUSTED_DOMAINS[0]}/"
+          "http://sub.#{TRUSTED_DOMAINS[0]}"
+          "https://sub.#{TRUSTED_DOMAINS[0]}"
 
-          "http://sub.sub.#{TRUSTED_DOMAIN}/"
-          "https://sub.sub.#{TRUSTED_DOMAIN}/"
-          "http://sub.sub.#{TRUSTED_DOMAIN}"
-          "https://sub.sub.#{TRUSTED_DOMAIN}"
+          "http://sub.sub.#{TRUSTED_DOMAINS[0]}/"
+          "https://sub.sub.#{TRUSTED_DOMAINS[0]}/"
+          "http://sub.sub.#{TRUSTED_DOMAINS[0]}"
+          "https://sub.sub.#{TRUSTED_DOMAINS[0]}"
         ]
 
         Promise.map domains, (domain) ->
@@ -356,7 +358,7 @@ describe 'sdk', ->
           'http://evil.io/'
           'http://sub.evil.io/'
           'http://sub.sub.evil.io/'
-          "http://evil.io/http://#{TRUSTED_DOMAIN}/"
+          "http://evil.io/http://#{TRUSTED_DOMAINS[0]}/"
         ]
 
         Promise.each domains, (domain) ->

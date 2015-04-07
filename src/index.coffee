@@ -1,7 +1,8 @@
 Promise = window.Promise or require 'promiz'
 portal = require 'portal-gun'
 
-TRUSTED_DOMAIN = (process.env.TRUSTED_DOMAIN or 'clay.io')
+TRUSTED_DOMAINS = process.env.TRUSTED_DOMAINS?.split(',') or
+                  ['clay.io', 'staging.wtf']
 TWEET_LENGTH = 140
 VERSION = 'v1.1.1'
 
@@ -52,14 +53,14 @@ methods = {
       if debug
         portal.up()
       else
-        portal.up trusted: TRUSTED_DOMAIN, subdomains: true
+        portal.up trusted: TRUSTED_DOMAINS, subdomains: true
 
       unless typeof gameId is 'string' and /^[0-9]+$/.test gameId
         return cb new Error 'Missing or invalid gameId'
 
       initHasBeenCalled = true
 
-      portal.get 'auth.getStatus', {gameId}
+      portal.call 'auth.getStatus', {gameId}
       .then (status) ->
         # TODO: Token may be invalid
         config.resolve
@@ -97,7 +98,7 @@ methods = {
           params[0].gameId = config.gameId
           params[0].accessToken = config.accessToken
 
-        return portal.get method, params
+        return portal.call method, params
     )
     .then (x) -> cb null, x
     .catch cb
@@ -107,7 +108,7 @@ methods = {
 
 }
 
-portal.register 'share.any', ({text} = {}) ->
+portal.on 'share.any', ({text} = {}) ->
   unless typeof text is 'string'
     throw new Error 'text parameter is missing or invalid'
 
