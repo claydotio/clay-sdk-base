@@ -4,7 +4,7 @@ portal = require 'portal-gun'
 TRUSTED_DOMAINS = process.env.TRUSTED_DOMAINS?.split(',') or
                   ['clay.io', 'staging.wtf']
 TWEET_LENGTH = 140
-VERSION = 'v1.1.1'
+VERSION = 'v1.1.2'
 
 deferredFactory = ->
   resolve = null
