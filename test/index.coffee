@@ -47,7 +47,7 @@ postRoutes = {}
 ClayRoot.__set__ 'window.parent.postMessage', (messageString, targetOrigin) ->
   targetOrigin.should.be '*'
   message = JSON.parse messageString
-  _.isNumber(message.id).should.be true
+  _.isString(message.id).should.be true
   message._portal.should.be true
   message.jsonrpc.should.be '2.0'
 
@@ -105,44 +105,37 @@ describe 'sdk', ->
           status.userId.should.be '1'
           done(err)
 
-    describe 'config', ->
-      it 'sets gameId', (done) ->
-        cfg = deferredFactory()
-        ClayRoot.__set__ 'config', cfg
-
-        routePost 'auth.getStatus',
-          data:
-            result: {accessToken: '1'}
-
-        Clay 'init', {gameId: '2'}
-
-        cfg.then (config) ->
-          config.gameId.should.be '2'
-        .then (x) -> done()
-        .catch done
-
     describe 'signature', ->
       it 'gameId type checks undefined', (done) ->
+        ClayRoot.__set__ 'initHasBeenCalled', false
         Clay 'init', {}, (err) ->
           err.message.should.be 'Missing or invalid gameId'
           done()
 
       it 'gameId type checks number', (done) ->
+        ClayRoot.__set__ 'initHasBeenCalled', false
         Clay 'init', {gameId: 1}, (err) ->
           err.message.should.be 'Missing or invalid gameId'
           done()
 
     describe 'domain verification when framed', ->
       it 'dissallows invalid domains', (done) ->
-
+        ClayRoot.__set__ 'initHasBeenCalled', false
+        portal = ClayRoot.__get__ 'portal'
+        portal.down()
         routePost 'auth.getStatus', origin: 'http://evil.io', data: result: '1'
+        ClayRoot.__set__ 'config', Promiz.resolve {}
 
         Clay 'init', {gameId: '1'}, (err) ->
           err.should.exist
           done()
 
       it 'allows invalid domains in debug mode', (done) ->
+        ClayRoot.__set__ 'initHasBeenCalled', false
+        portal = ClayRoot.__get__ 'portal'
+        portal.down()
         routePost 'auth.getStatus', origin: 'http://evil.io', data: result: '1'
+        ClayRoot.__set__ 'config', Promiz.resolve {}
         Clay 'init', {gameId: '1', debug: true}, done
 
   describe 'client()', ->
@@ -188,6 +181,9 @@ describe 'sdk', ->
       before ->
         ClayRoot.__set__ 'initHasBeenCalled', true
         ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}
+        portal = ClayRoot.__get__ 'portal'
+        portal.down()
+        portal.up()
 
       it 'posts to parent frame', (done) ->
         routePost 'kik.getUser',
@@ -211,11 +207,12 @@ describe 'sdk', ->
           done()
 
       it 'times out', (done) ->
+        @timeout 1200
         portal = ClayRoot.__get__ 'portal'
         routePost 'infinite.loop', timeout: true
 
         portal.down()
-        portal.up timeout: 1
+        portal.up()
 
         Clay 'client.infinite.loop', (err) ->
           err.message.should.be 'Message Timeout'
@@ -317,6 +314,8 @@ describe 'sdk', ->
     describe 'domain verification', ->
       @timeout 1000
       before ->
+        portal = ClayRoot.__get__ 'portal'
+        portal.down()
         Clay 'init', {gameId: '1'}
         ClayRoot.__set__ 'initHasBeenCalled', true
         ClayRoot.__set__ 'config', Promiz.resolve {gameId: '1'}

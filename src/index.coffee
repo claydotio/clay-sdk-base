@@ -19,7 +19,6 @@ deferredFactory = ->
 
 config = deferredFactory()
 initHasBeenCalled = false
-windowOpeningMethods = ['share.any']
 
 Clay = (method, params, cb = -> null) ->
   if typeof params is 'function'
@@ -46,21 +45,24 @@ methods = {
     cb null, VERSION
 
   init: (method, [options], cb) ->
-    (do ->
+    new Promise (resolve, reject) ->
+      if initHasBeenCalled
+        throw new Error 'Init already called'
+
       gameId = options.gameId
       debug = Boolean options.debug
-
-      if debug
-        portal.up()
-      else
-        portal.up trusted: TRUSTED_DOMAINS, subdomains: true
 
       unless typeof gameId is 'string' and /^[0-9]+$/.test gameId
         return cb new Error 'Missing or invalid gameId'
 
       initHasBeenCalled = true
 
-      portal.call 'auth.getStatus', {gameId}
+      if debug
+        portal.up()
+      else
+        portal.up trusted: TRUSTED_DOMAINS, allowSubdomains: true
+
+      resolve portal.call 'auth.getStatus', {gameId}
       .then (status) ->
         # TODO: Token may be invalid
         config.resolve
@@ -74,24 +76,19 @@ methods = {
           accessToken: null
           userId: null
         return config
-    )
     .then (x) ->
       cb null, x
     .catch cb
 
   client: (method, params, cb) ->
-    if method is 'client'
-      return cb new Error 'Missing or invalid method'
+    new Promise (resolve, reject) ->
+      if method is 'client'
+        throw new Error 'Missing or invalid method'
 
-    (do ->
       unless initHasBeenCalled
-        return Promise.reject new Error 'Must call Clay(\'init\') first'
+        throw new Error 'Must call Clay(\'init\') first'
 
-      # must occur before any async code
-      if method in windowOpeningMethods
-        portal.beforeWindowOpen()
-
-      config.then (config) ->
+      resolve config.then (config) ->
         unless Object::toString.call(params) is '[object Array]'
           params = [params]
 
@@ -101,7 +98,6 @@ methods = {
           params[0].accessToken = config.accessToken
 
         return portal.call method, params
-    )
     .then (x) -> cb null, x
     .catch cb
 
@@ -119,7 +115,7 @@ portal.on 'share.any', ({text} = {}) ->
 
   tweet = (text) ->
     text = encodeURIComponent text.substr 0, TWEET_LENGTH
-    portal.windowOpen "https://twitter.com/intent/tweet?text=#{text}", '_system'
+    window.open "https://twitter.com/intent/tweet?text=#{text}", '_system'
 
   return tweet(text)
 
